@@ -7,6 +7,8 @@ import (
 	"os"
 )
 
+const confDirPath = "/etc/collectd/collectd.conf.d/"
+
 func main() {
 	e := echo.New()
 
@@ -26,7 +28,7 @@ func main() {
 		}
 		defer src.Close()
 
-		dst, err := os.Create("/etc/collectd/collectd.conf.d/" + file.Filename)
+		dst, err := os.Create(confDirPath + file.Filename)
 		if err != nil {
 			return c.String(http.StatusInternalServerError, "file create NG")
 		}
@@ -36,6 +38,7 @@ func main() {
 		if _, err = io.Copy(dst, src); err != nil {
 			return c.String(http.StatusInternalServerError, "file write NG")
 		}
+
 		result := create_collectd_conf()
 		if result == 0 {
 			return c.String(http.StatusCreated, "collectd conf OK")
