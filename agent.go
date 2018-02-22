@@ -3,7 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
-	"os"
+	// "os"
 	"os/exec"
 	"strings"
 )
@@ -29,16 +29,18 @@ func create_collectd_conf() int {
 		return 1
 	}
 
-	flag.Parse()
-	if _, errFile := os.Stat(*collectdConfig); errFile != nil {
-		fmt.Println("file not found")
-		return 1
-	}
-	errCp := exec.Command("sudo", "cp", *collectdConfig, "/etc/collectd/collectd.conf.d/localagent.conf").Run()
-	if errCp != nil {
-		fmt.Println("cp NG")
-		return 1
-	}
+	/*
+		flag.Parse()
+		if _, errFile := os.Stat(*collectdConfig); errFile != nil {
+			fmt.Println("file not found")
+			return 1
+		}
+		errCp := exec.Command("sudo", "cp", *collectdConfig, "/etc/collectd/collectd.conf.d/localagent.conf").Run()
+		if errCp != nil {
+			fmt.Println("cp NG")
+			return 1
+		}
+	*/
 
 	_, errStart := exec.Command("sudo", "systemctl", "start", "collectd").Output()
 	if errStart != nil {
