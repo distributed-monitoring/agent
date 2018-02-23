@@ -1,4 +1,4 @@
-```puml
+```uml
 @startuml
 actor admin
 
