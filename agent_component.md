@@ -1,4 +1,3 @@
-# DMA Component Pict
 ```puml
 @startuml
 actor admin
