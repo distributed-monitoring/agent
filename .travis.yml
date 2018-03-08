@@ -24,7 +24,7 @@ after_success:
   # put build tgz to bintray
   - curl -T ${TRAVIS_BUILD_DIR}/dist/snapshot/agent_linux_amd64.tar.gz -u${BINTRAY_USER}:${BINTRAY_APIKEY} https://api.bintray.com/content/distributed-monitoring/agent-snapshots/snapshot/snapshot-${TRAVIS_COMMIT}/agent_linux_amd64-${TRAVIS_COMMIT}.tar.gz
   # publish uploaded file
-  - curl -X POST -u${BINTRAY_USER}:${BINTRAY_APIKEY} https://api.bintray.com/content/distributed-monitoring/agent-snapshots/snapshot-${TRAVIS_COMMIT}/publish
+  - curl -X POST -u${BINTRAY_USER}:${BINTRAY_APIKEY} https://api.bintray.com/content/distributed-monitoring/agent-snapshots/snapshot/snapshot-${TRAVIS_COMMIT}/publish
   # put it in bintray download list
   - sleep 20
-  - "curl -X PUT -H 'Accept: application/json' -H 'Content-type: application/json' -u${BINTRAY_USER}:${BINTRAY_APIKEY} https://api.bintray.com/file_metadata/distributred-monitoring/agent-snapshots/agent_linux_amd64-${TRAVIS_COMMIT}.tar.gz -d '{\"list_in_downloads\":true}'"
+  - "curl -X PUT -H 'Accept: application/json' -H 'Content-type: application/json' -u${BINTRAY_USER}:${BINTRAY_APIKEY} https://api.bintray.com/file_metadata/distributed-monitoring/agent-snapshots/agent_linux_amd64-${TRAVIS_COMMIT}.tar.gz -d '{\"list_in_downloads\":true}'"
