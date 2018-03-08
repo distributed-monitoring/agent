@@ -1,4 +1,30 @@
 language: go
 
+install:
+  - go get -u github.com/laher/goxc
+  - go get github.com/golang/lint/golint
+  - go get ./cmd/server
+  - go get ./cmd/threshold
+
+before_script:
+  - go vet ./cmd/server
+    # - go lint ./cmd/server
+  - go vet ./cmd/threshold
+    # - go lint ./cmd/threshold
+
 script:
- - go test -v
+  - go build ./cmd/server
+  - go build ./cmd/threshold
+  # - go test -v ./cmd/server
+  # - go test -v ./cmd/threshold
+  - mkdir -p ${TRAVIS_BUILD_DIR}/dist
+  - goxc -d=${TRAVIS_BUILD_DIR}/dist -arch=amd64 -bc=linux -tasks=clean-destination,xc,archive,rmbin
+
+after_success:
+  # put build tgz to bintray
+  - curl -T ${TRAVIS_BUILD_DIR}/dist/snapshot/agent_linux_amd64.tar.gz -u -u${BINTRAY_USER}:${BINTRAY_APIKEY} https://api.bintray.com/content/distributed-monitoring/agent-snapshots/snapshot-${TRAVIS_COMMIT}/agent_linux_amd64-${TRAVIS_COMMIT}.tar.gz
+  # publish uploaded file
+  - curl -X POST -u${BINTRAY_USER}:${BINTRAY_APIKEY} https://api.bintray.com/content/distributed-monitoring/agent-snapshots/snapshot-${TRAVIS_COMMIT}/publish
+  # put it in bintray download list
+  - sleep 20
+  - "curl -X PUT -H 'Accept: application/json' -H 'Content-type: application/json' -u${BINTRAY_USER}:${BINTRAY_APIKEY} https://api.bintray.com/file_metadata/distributred-monitoring/agent-snapshots/agent_linux_amd64-${TRAVIS_COMMIT}.tar.gz -d '{\"list_in_downloads\":true}'"
