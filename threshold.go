@@ -1,4 +1,4 @@
-package main
+package threshold
 
 import (
 	"fmt"
@@ -49,7 +49,7 @@ func action() {
 	fmt.Println("kick action")
 }
 
-func main() {
+func threshold() {
 
 	client := redis.NewClient(&redis.Options{
 		Addr:     "localhost:6379",
