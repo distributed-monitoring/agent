@@ -1,4 +1,4 @@
-package threshold
+package main
 
 import (
 	"fmt"
@@ -39,8 +39,8 @@ func zrangebyscore(client *redis.Client) {
 
 func threshold(val int) {
 
-	threshold := 270540800
-	if val > threshold {
+	threshold_val := 270540800
+	if val > threshold_val {
 		action()
 	}
 }
@@ -49,7 +49,7 @@ func action() {
 	fmt.Println("kick action")
 }
 
-func threshold() {
+func main() {
 
 	client := redis.NewClient(&redis.Options{
 		Addr:     "localhost:6379",
