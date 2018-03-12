@@ -13,11 +13,11 @@ const interval = 10 //collectd interval
 
 func zrangebyscore(client *redis.Client) {
 
-	unix_now := int(time.Now().Unix())
+	unixNow := int(time.Now().Unix())
 
 	val, err := client.ZRangeByScore("collectd/wanted-filly.maas/memory/memory-used", redis.ZRangeBy{
-		Min: strconv.Itoa(unix_now - interval),
-		Max: strconv.Itoa(unix_now),
+		Min: strconv.Itoa(unixNow - interval),
+		Max: strconv.Itoa(unixNow),
 	}).Result()
 
 	if err == redis.Nil {
@@ -28,19 +28,19 @@ func zrangebyscore(client *redis.Client) {
 	} else {
 		split := strings.Split(val[0], ":")
 		val := split[1]
-		int_val, err := strconv.Atoi(val)
+		intVal, err := strconv.Atoi(val)
 		if err != nil {
 			os.Exit(1)
 		}
-		fmt.Println(int_val)
-		threshold(int_val)
+		fmt.Println(intVal)
+		threshold(intVal)
 	}
 }
 
 func threshold(val int) {
 
-	threshold_val := 270540800
-	if val > threshold_val {
+	thresholdVal := 270540800
+	if val > thresholdVal {
 		action()
 	}
 }

@@ -12,21 +12,18 @@ var (
 	collectdConfig = flag.String("c", "/tmp/collectd.conf", "collectd config file")
 )
 
-func create_collectd_conf() int {
+func createCollectdConf() error {
 	outStatus, errStatus := exec.Command("sudo", "systemctl", "status", "collectd").Output()
 	if errStatus != nil {
-		fmt.Println("status NG")
-		return 1
+		return fmt.Errorf("Status NG")
 	}
 	if !strings.Contains(string(outStatus), "running") {
-		fmt.Println("status not running")
-		return 1
+		return fmt.Errorf("Status not running")
 	}
 
 	_, errStop := exec.Command("sudo", "systemctl", "stop", "collectd").Output()
 	if errStop != nil {
-		fmt.Println("stop NG")
-		return 1
+		return fmt.Errorf("Stop NG")
 	}
 
 	/*
@@ -44,11 +41,10 @@ func create_collectd_conf() int {
 
 	_, errStart := exec.Command("sudo", "systemctl", "start", "collectd").Output()
 	if errStart != nil {
-		fmt.Println("start NG")
-		return 1
+		return fmt.Errorf("Start NG")
 	}
 
 	fmt.Println("All complete!")
 
-	return 0
+	return nil
 }

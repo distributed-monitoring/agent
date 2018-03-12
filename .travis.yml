@@ -8,9 +8,11 @@ install:
 
 before_script:
   - go vet ./cmd/server
-    # - go lint ./cmd/server
+  - if [ -n "$(go fmt ./cmd/server)" ]; then echo './cmd/server is not formatted with "go fmt"'; false; fi
+  - golint ./cmd/server | xargs -r false
   - go vet ./cmd/threshold
-    # - go lint ./cmd/threshold
+  - if [ -n "$(go fmt ./cmd/threshold)" ]; then echo './cmd/threshold is not formatted with "go fmt"'; false; fi
+  - golint ./cmd/threshold | xargs -r false
 
 script:
   - go build ./cmd/server

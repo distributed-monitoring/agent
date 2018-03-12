@@ -17,6 +17,7 @@
 package main
 
 import (
+	"fmt"
 	"github.com/labstack/echo"
 	"io"
 	"net/http"
@@ -55,12 +56,12 @@ func main() {
 			return c.String(http.StatusInternalServerError, "file write NG")
 		}
 
-		result := create_collectd_conf()
-		if result == 0 {
-			return c.String(http.StatusCreated, "collectd conf OK")
-		} else {
-			return c.String(http.StatusInternalServerError, "collectd conf NG")
+		err = createCollectdConf()
+		if err != nil {
+			errstr := fmt.Sprintf("collectd conf NG:%v", err)
+			return c.String(http.StatusInternalServerError, errstr)
 		}
+		return c.String(http.StatusCreated, "collectd conf OK")
 	})
 
 	e.Logger.Fatal(e.Start(":12345"))
