@@ -1,7 +1,9 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
+	"github.com/distributed-monitoring/agent/pkg/notify"
 	"github.com/go-redis/redis"
 	"os"
 	"strconv"
@@ -9,13 +11,18 @@ import (
 	"time"
 )
 
-const interval = 10 //collectd interval
+const interval = 5 //collectd interval
+
+const redisKey = "collectd/localhost/interface-eth0/if_octets"
+const minThresh = 5000000
+
+// exceed by exec `sudo ping <IP> -i 0.00005 -c 1000 -s 1000`
 
 func zrangebyscore(client *redis.Client) {
 
 	unixNow := int(time.Now().Unix())
 
-	val, err := client.ZRangeByScore("collectd/wanted-filly.maas/memory/memory-used", redis.ZRangeBy{
+	val, err := client.ZRangeByScore(redisKey, redis.ZRangeBy{
 		Min: strconv.Itoa(unixNow - interval),
 		Max: strconv.Itoa(unixNow),
 	}).Result()
@@ -26,28 +33,47 @@ func zrangebyscore(client *redis.Client) {
 	} else if err != nil {
 		panic(err)
 	} else {
-		split := strings.Split(val[0], ":")
-		val := split[1]
-		intVal, err := strconv.Atoi(val)
-		if err != nil {
-			os.Exit(1)
+		maxVal := 0
+		for _, strVal := range val {
+			split := strings.Split(strVal, ":")
+			txVal := split[2]
+			floatVal, err := strconv.ParseFloat(txVal, 64)
+			if err != nil {
+				os.Exit(1)
+			}
+			intVal := int(floatVal)
+			if maxVal < intVal {
+				maxVal = intVal
+			}
 		}
-		fmt.Println(intVal)
-		threshold(intVal)
+		threshold(maxVal)
 	}
 }
 
 func threshold(val int) {
 
-	thresholdVal := 270540800
+	thresholdVal := minThresh
 	if val > thresholdVal {
-		action()
+		//action(val)
+
+		fmt.Println("kick action")
+		var message bytes.Buffer
+		message.WriteString("Value ")
+		message.WriteString(strconv.Itoa(val))
+		message.WriteString(" exceeded threshold ")
+		message.WriteString(strconv.Itoa(thresholdVal))
+		message.WriteString(".")
+		notify.NotifyCollectd(message.String(),
+			"interface", "if_octets",
+			"add_info", "some additional information.")
 	}
 }
 
-func action() {
+/*
+func action(val int) {
 	fmt.Println("kick action")
 }
+*/
 
 func main() {
 
