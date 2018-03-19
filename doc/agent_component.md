@@ -5,13 +5,13 @@ actor admin
 node "controller" {
   frame "central agent" {
     admin --> ()cli
-    ()cli -> [policy manager]
-    [local_agent_manager]
+    ()cli -> [local_agent_manager]
+    [monitoring_manager]
   }
   () OpenStack_API
 }
 
-[policy manager] ---> ()broker : pub
+[local_agent_manager] ---> ()broker : pub
 
 node "compute01"{
   frame "local agent" {
@@ -20,7 +20,7 @@ node "compute01"{
     [API_kicker]
     [info_adder]
   }
-  [policy manager] --> [file_manager] : send setting(gRPC/zeroMQ/etc)
+  [local_agent_manager] --> [file_manager] : send setting(gRPC/zeroMQ/etc)
   [file_manager] -> ()broker : sub
   [file_manager] --> [collector]
   [process_controller] --> [collector] : stop & start
