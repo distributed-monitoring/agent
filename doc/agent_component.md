@@ -15,10 +15,10 @@ node "controller" {
 
 node "compute01"{
   frame "local agent" {
-    [file_manager]
-    [process_controller]
     [API_kicker]
     [info_adder]
+    [process_controller]
+    [file_manager]
   }
   [local_agent_manager] --> [file_manager] : send setting(gRPC/zeroMQ/etc)
   [file_manager] -> ()broker : sub
@@ -29,6 +29,7 @@ node "compute01"{
   database "in-memory DB"
   [API_kicker] --> () OpenStack_API
   [API_kicker] --> [in-memory DB] : insert inventory
+  [in-memory DB] -> [info_adder]
   [info_adder] --> [notificator] : add host/vm info
 }
 
