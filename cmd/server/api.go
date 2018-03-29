@@ -24,9 +24,9 @@ import (
 	"os"
 )
 
-const confDirPath = "/etc/collectd/collectd.conf.d/"
+// confDirPath is defined in main.go
 
-func main() {
+func runServer() {
 	e := echo.New()
 
 	e.GET("/", func(c echo.Context) error {
