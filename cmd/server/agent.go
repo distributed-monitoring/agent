@@ -1,15 +1,9 @@
 package main
 
 import (
-	"flag"
 	"fmt"
-	// "os"
 	"os/exec"
 	"strings"
-)
-
-var (
-	collectdConfig = flag.String("c", "/tmp/collectd.conf", "collectd config file")
 )
 
 func createCollectdConf() error {
@@ -25,19 +19,6 @@ func createCollectdConf() error {
 	if errStop != nil {
 		return fmt.Errorf("Stop NG")
 	}
-
-	/*
-		flag.Parse()
-		if _, errFile := os.Stat(*collectdConfig); errFile != nil {
-			fmt.Println("file not found")
-			return 1
-		}
-		errCp := exec.Command("sudo", "cp", *collectdConfig, "/etc/collectd/collectd.conf.d/localagent.conf").Run()
-		if errCp != nil {
-			fmt.Println("cp NG")
-			return 1
-		}
-	*/
 
 	_, errStart := exec.Command("sudo", "systemctl", "start", "collectd").Output()
 	if errStart != nil {

@@ -16,9 +16,24 @@
 
 package main
 
+import (
+	"flag"
+	"log"
+)
+
+var serverTypeOpt = flag.String("type", "pubsub", "server type: pubsub, api")
+
 const confDirPath = "/etc/collectd/collectd.conf.d/"
 
 func main() {
-	runServer()
-	// runSubscriber()
+	flag.Parse()
+
+	switch *serverTypeOpt {
+	case "pubsub":
+		runSubscriber()
+	case "api":
+		runAPIServer()
+	default:
+		log.Fatalln("server type is wrong, see help.")
+	}
 }

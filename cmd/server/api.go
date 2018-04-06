@@ -26,7 +26,7 @@ import (
 
 // confDirPath is defined in main.go
 
-func runServer() {
+func runAPIServer() {
 	e := echo.New()
 
 	e.GET("/", func(c echo.Context) error {
