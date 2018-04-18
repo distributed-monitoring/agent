@@ -1,10 +1,13 @@
 language: go
+sudo: required
 
 install:
+  - sudo apt-get install libvirt-dev
   - go get -u github.com/laher/goxc
   - go get github.com/golang/lint/golint
   - go get ./cmd/server
   - go get ./cmd/threshold
+  - go get ./cmd/infofetch
 
 before_script:
   - go vet ./cmd/server
@@ -17,6 +20,7 @@ before_script:
 script:
   - go build ./cmd/server
   - go build ./cmd/threshold
+  - go build ./cmd/infofetch
   # - go test -v ./cmd/server
   # - go test -v ./cmd/threshold
   - mkdir -p ${TRAVIS_BUILD_DIR}/dist
