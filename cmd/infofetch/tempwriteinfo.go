@@ -17,13 +17,14 @@
 package main
 
 import (
+	"github.com/distributed-monitoring/agent/pkg/annotate"
 	libvirt "github.com/libvirt/libvirt-go"
 	"log"
 )
 
 var testVal = 0
 
-func writeInfo(infoPool pool) {
+func writeInfo(infoPool annotate.Pool) {
 	conn, err := libvirt.NewConnect("qemu:///system")
 	if err != nil {
 		log.Fatalln("libvirt connect error")
@@ -45,11 +46,11 @@ func writeInfo(infoPool pool) {
 		dom.Free()
 		switch testVal {
 		case 0:
-			infoPool.set("server", name, "{\"addinfo\": \"somevalue\"}")
+			infoPool.Set("server", name, "{\"addinfo\": \"somevalue\"}")
 		case 1, 3:
-			log.Println(infoPool.get("server", name))
+			log.Println(infoPool.Get("server", name))
 		case 2:
-			infoPool.del("server", name)
+			infoPool.Del("server", name)
 		}
 	}
 	testVal = (testVal + 1) % 4

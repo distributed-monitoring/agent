@@ -14,7 +14,7 @@
  *   limitations under the License.
  */
 
-package main
+package annotate
 
 import (
 	"github.com/go-redis/redis"
@@ -23,31 +23,31 @@ import (
 
 const collectdLabel = "barometer-localagent"
 
-type redisPool struct {
-	client *redis.Client
+type RedisPool struct {
+	Client *redis.Client
 }
 
-func (thisPool redisPool) set(infoType string, virtVal string, data string) error {
-	key := collectdLabel + "/" + infoType + "/" + virtVal
-	err := thisPool.client.Set(key, data, 0).Err()
+func (thisPool RedisPool) Set(infoType string, infoName string, data string) error {
+	key := collectdLabel + "/" + infoType + "/" + infoName
+	err := thisPool.Client.Set(key, data, 0).Err()
 	if err != nil {
 		log.Printf("redis Set error: %s", err)
 	}
 	return err
 }
 
-func (thisPool redisPool) get(infoType string, virtVal string) (string, error) {
-	key := collectdLabel + "/" + infoType + "/" + virtVal
-	value, err := thisPool.client.Get(key).Result()
+func (thisPool RedisPool) Get(infoType string, infoName string) (string, error) {
+	key := collectdLabel + "/" + infoType + "/" + infoName
+	value, err := thisPool.Client.Get(key).Result()
 	if err != nil {
 		log.Printf("redis Get error: %s", err)
 	}
 	return value, err
 }
 
-func (thisPool redisPool) del(infoType string, virtVal string) error {
-	key := collectdLabel + "/" + infoType + "/" + virtVal
-	err := thisPool.client.Del(key).Err()
+func (thisPool RedisPool) Del(infoType string, infoName string) error {
+	key := collectdLabel + "/" + infoType + "/" + infoName
+	err := thisPool.Client.Del(key).Err()
 	if err != nil {
 		log.Printf("redis Del error: %s", err)
 	}

@@ -14,30 +14,14 @@
  *   limitations under the License.
  */
 
-package main
+package annotate
 
-import (
-	"github.com/distributed-monitoring/agent/pkg/annotate"
-	"github.com/go-redis/redis"
-	"time"
-)
-
-func main() {
-	redisClient := redis.NewClient(&redis.Options{
-		Addr:     "localhost:6379",
-		Password: "",
-		DB:       0,
-	})
-	infoPool := annotate.RedisPool{Client: redisClient}
-
-	forever := make(chan bool)
-
-	ticker := time.NewTicker(5 * time.Second)
-	go func() {
-		for range ticker.C {
-			writeInfo(infoPool)
-		}
-	}()
-
-	<-forever
+/*
+  e.g. Set("virt-name", "instance-00000001", "{"OS-name": "testvm1"}")
+  e.g. Set("virt-if", "tap1e793b2b-8e", "{"OS-uuid": "df846647-c16a-4d8a-842a-ac39bd4a971e"}")
+*/
+type Pool interface {
+	Set(string, string, string) error   // (infoType, infoName, JsonData)
+	Get(string, string) (string, error) // (infoType, infoName)
+	Del(string, string) error           // (infoType, infoName)
 }
