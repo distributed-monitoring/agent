@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 NEC Corporation
+ * Copyright 2018 NEC Corporation
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -21,7 +21,9 @@ import (
 	"log"
 )
 
-func getInfo() {
+var testVal = 0
+
+func writeInfo(infoPool pool) {
 	conn, err := libvirt.NewConnect("qemu:///system")
 	if err != nil {
 		log.Fatalln("libvirt connect error")
@@ -34,11 +36,21 @@ func getInfo() {
 	}
 
 	log.Printf("%d running domains:\n", len(doms))
+
 	for _, dom := range doms {
 		name, err := dom.GetName()
-		if err == nil {
-			log.Printf("  %s\n", name)
+		if err != nil {
+			log.Fatalf("virt GetName error: %s", err)
 		}
 		dom.Free()
+		switch testVal {
+		case 0:
+			infoPool.set("server", name, "{\"addinfo\": \"somevalue\"}")
+		case 1, 3:
+			log.Println(infoPool.get("server", name))
+		case 2:
+			infoPool.del("server", name)
+		}
 	}
+	testVal = (testVal + 1) % 4
 }
