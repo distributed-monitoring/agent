@@ -18,7 +18,7 @@ const minThresh = 5000000
 
 // exceed by exec `sudo ping <IP> -i 0.00005 -c 1000 -s 1000`
 
-func zrangebyscore(client *redis.Client) {
+func zrangebyscore(client *redis.Client, notifier notify.Notifier) {
 
 	unixNow := int(time.Now().Unix())
 
@@ -46,26 +46,19 @@ func zrangebyscore(client *redis.Client) {
 				maxVal = intVal
 			}
 		}
-		threshold(maxVal)
-	}
-}
+		if maxVal > minThresh {
 
-func threshold(val int) {
-
-	thresholdVal := minThresh
-	if val > thresholdVal {
-		//action(val)
-
-		fmt.Println("kick action")
-		var message bytes.Buffer
-		message.WriteString("Value ")
-		message.WriteString(strconv.Itoa(val))
-		message.WriteString(" exceeded threshold ")
-		message.WriteString(strconv.Itoa(thresholdVal))
-		message.WriteString(".")
-		notify.NotifyCollectd(message.String(),
-			"interface", "if_octets",
-			"add_info", "some additional information.")
+			fmt.Println("kick action")
+			var message bytes.Buffer
+			message.WriteString("Value ")
+			message.WriteString(strconv.Itoa(maxVal))
+			message.WriteString(" exceeded threshold ")
+			message.WriteString(strconv.Itoa(minThresh))
+			message.WriteString(".")
+			notifier.Send(message.String(),
+				"warning",
+				[][2]string{{"add_info", "some value"}})
+		}
 	}
 }
 
@@ -83,11 +76,15 @@ func main() {
 		DB:       0,
 	})
 
+	notifier := notify.CollectdNotifier{
+		PluginName: "barometer-localhost",
+		TypeName:   "if-octet-threshold"}
+
 	//how to stop after compile...
 	ticker := time.NewTicker(interval * time.Second)
 
 	for range ticker.C {
-		zrangebyscore(client)
+		zrangebyscore(client, notifier)
 	}
 
 	fmt.Println("end")
