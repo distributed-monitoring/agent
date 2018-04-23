@@ -17,8 +17,8 @@
 package annotate
 
 /*
-  e.g. Set("virt-name", "instance-00000001", "{"OS-name": "testvm1"}")
-  e.g. Set("virt-if", "tap1e793b2b-8e", "{"OS-uuid": "df846647-c16a-4d8a-842a-ac39bd4a971e"}")
+  e.g. Set("virt_name", "instance-00000001", "{"OS-name": "testvm1"}")
+  e.g. Set("virt_if", "tap1e793b2b-8e", "{"OS-uuid": "df846647-c16a-4d8a-842a-ac39bd4a971e"}")
 */
 type Pool interface {
 	Set(string, string, string) error   // (infoType, infoName, JsonData)

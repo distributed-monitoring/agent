@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"fmt"
+	"github.com/distributed-monitoring/agent/pkg/annotate"
 	"github.com/distributed-monitoring/agent/pkg/notify"
 	"github.com/go-redis/redis"
 	"os"
@@ -13,16 +14,17 @@ import (
 
 const interval = 5 //collectd interval
 
-const redisKey = "collectd/localhost/interface-eth0/if_octets"
-const minThresh = 5000000
+// e.g. collectd/instance-00000001/virt/if_octets-tapd21acb51-35
+const redisKey = "collectd/*/virt/if_octets-*"
+const minThresh = 1000000
 
 // exceed by exec `sudo ping <IP> -i 0.00005 -c 1000 -s 1000`
 
-func zrangebyscore(client *redis.Client, notifier notify.Notifier) {
+func zrangebyscore(client *redis.Client, key string, pool annotate.Pool, notifier notify.Notifier) {
 
 	unixNow := int(time.Now().Unix())
 
-	val, err := client.ZRangeByScore(redisKey, redis.ZRangeBy{
+	val, err := client.ZRangeByScore(key, redis.ZRangeBy{
 		Min: strconv.Itoa(unixNow - interval),
 		Max: strconv.Itoa(unixNow),
 	}).Result()
@@ -49,15 +51,31 @@ func zrangebyscore(client *redis.Client, notifier notify.Notifier) {
 		if maxVal > minThresh {
 
 			fmt.Println("kick action")
+
+			item := strings.Split(key, "/")
+			ifItem := strings.SplitN(item[3], "-", 2)
+			virtName := item[1]
+			virtIF := ifItem[1]
+
 			var message bytes.Buffer
 			message.WriteString("Value ")
 			message.WriteString(strconv.Itoa(maxVal))
 			message.WriteString(" exceeded threshold ")
 			message.WriteString(strconv.Itoa(minThresh))
 			message.WriteString(".")
+
+			nameVal, _ := pool.Get("virt_name", virtName)
+			ifVal, _ := pool.Get("virt_if", virtIF)
+
+			nameInfo := fmt.Sprintf("{\"%s\": %s}", virtName, nameVal)
+			ifInfo := fmt.Sprintf("{\"%s\": %s}", virtIF, ifVal)
+
+			fmt.Println(nameInfo)
+			fmt.Println(ifInfo)
+
 			notifier.Send(message.String(),
 				"warning",
-				[][2]string{{"add_info", "some value"}})
+				[][2]string{{"virt_name", nameInfo}, {"virt_if", ifInfo}})
 		}
 	}
 }
@@ -68,6 +86,16 @@ func action(val int) {
 }
 */
 
+func checkVirtIF(client *redis.Client, pool annotate.Pool, notifier notify.Notifier) {
+	keys, err := client.Keys(redisKey).Result()
+	if err != nil {
+		panic(err)
+	}
+	for _, key := range keys {
+		zrangebyscore(client, key, pool, notifier)
+	}
+}
+
 func main() {
 
 	client := redis.NewClient(&redis.Options{
@@ -75,16 +103,17 @@ func main() {
 		Password: "",
 		DB:       0,
 	})
+	infoPool := annotate.RedisPool{Client: client}
 
 	notifier := notify.CollectdNotifier{
-		PluginName: "barometer-localhost",
-		TypeName:   "if-octet-threshold"}
+		PluginName: "barometer-localagent",
+		TypeName:   "if-octets-threshold"}
 
 	//how to stop after compile...
 	ticker := time.NewTicker(interval * time.Second)
 
 	for range ticker.C {
-		zrangebyscore(client, notifier)
+		checkVirtIF(client, infoPool, notifier)
 	}
 
 	fmt.Println("end")

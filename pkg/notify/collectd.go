@@ -19,6 +19,7 @@ package notify
 import (
 	"bytes"
 	"fmt"
+	"strings"
 	"time"
 )
 
@@ -35,7 +36,7 @@ func (thisNotify CollectdNotifier) Send(message string, severity string, metaDat
 		metaDataStr.WriteString(" s:")
 		metaDataStr.WriteString(data[0])
 		metaDataStr.WriteString("=\"")
-		metaDataStr.WriteString(data[1])
+		metaDataStr.WriteString(strings.Replace(data[1], "\"", "\\\"", -1))
 		metaDataStr.WriteString("\"")
 	}
 

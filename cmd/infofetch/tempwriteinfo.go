@@ -19,10 +19,9 @@ package main
 import (
 	"github.com/distributed-monitoring/agent/pkg/annotate"
 	libvirt "github.com/libvirt/libvirt-go"
+	"io/ioutil"
 	"log"
 )
-
-var testVal = 0
 
 func writeInfo(infoPool annotate.Pool) {
 	conn, err := libvirt.NewConnect("qemu:///system")
@@ -33,9 +32,8 @@ func writeInfo(infoPool annotate.Pool) {
 
 	doms, err := conn.ListAllDomains(libvirt.CONNECT_LIST_DOMAINS_ACTIVE)
 	if err != nil {
-		log.Fatalln("libvirt command error")
+		log.Fatalf("libvirt dom list error: %s", err)
 	}
-
 	log.Printf("%d running domains:\n", len(doms))
 
 	for _, dom := range doms {
@@ -44,14 +42,11 @@ func writeInfo(infoPool annotate.Pool) {
 			log.Fatalf("virt GetName error: %s", err)
 		}
 		dom.Free()
-		switch testVal {
-		case 0:
-			infoPool.Set("server", name, "{\"addinfo\": \"somevalue\"}")
-		case 1, 3:
-			log.Println(infoPool.Get("server", name))
-		case 2:
-			infoPool.Del("server", name)
-		}
+		infoPool.Set("virt_name", name, "{\"OS-name\": \"testvm-?\"}")
 	}
-	testVal = (testVal + 1) % 4
+
+	files, _ := ioutil.ReadDir("/sys/class/net")
+	for _, f := range files {
+		infoPool.Set("virt_if", f.Name(), "{\"hwaddr\": \"aa:bb:cc:dd:ee:ff\"}")
+	}
 }
