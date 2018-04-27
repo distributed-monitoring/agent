@@ -16,9 +16,8 @@
 
 package notify
 
-/*
-  e.g. Send("Threshold is exceeded.", "warning", [["virt-name", "instance-00000001"], [...]])
-*/
+// Notifier is an interface of notification.
+// e.g. Send("Threshold is exceeded.", "warning", [["virt-name", "instance-00000001"], [...]])
 type Notifier interface {
 	Send(string, string, [][2]string) error // (message, severity, metaDataList)
 }

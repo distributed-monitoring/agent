@@ -21,14 +21,16 @@ import (
 	"log"
 )
 
-const collectdLabel = "barometer-localagent"
+const redisLabel = "barometer-localagent"
 
+// RedisPool is an implementation of Pool by redis.
 type RedisPool struct {
 	Client *redis.Client
 }
 
+// Set is to set data in redis.
 func (thisPool RedisPool) Set(infoType string, infoName string, data string) error {
-	key := collectdLabel + "/" + infoType + "/" + infoName
+	key := redisLabel + "/" + infoType + "/" + infoName
 	err := thisPool.Client.Set(key, data, 0).Err()
 	if err != nil {
 		log.Printf("redis Set error: %s", err)
@@ -36,8 +38,9 @@ func (thisPool RedisPool) Set(infoType string, infoName string, data string) err
 	return err
 }
 
+// Get is to get data in redis.
 func (thisPool RedisPool) Get(infoType string, infoName string) (string, error) {
-	key := collectdLabel + "/" + infoType + "/" + infoName
+	key := redisLabel + "/" + infoType + "/" + infoName
 	value, err := thisPool.Client.Get(key).Result()
 	if err != nil {
 		log.Printf("redis Get error: %s", err)
@@ -45,8 +48,9 @@ func (thisPool RedisPool) Get(infoType string, infoName string) (string, error) 
 	return value, err
 }
 
+// Del is to delete data in redis.
 func (thisPool RedisPool) Del(infoType string, infoName string) error {
-	key := collectdLabel + "/" + infoType + "/" + infoName
+	key := redisLabel + "/" + infoType + "/" + infoName
 	err := thisPool.Client.Del(key).Err()
 	if err != nil {
 		log.Printf("redis Del error: %s", err)

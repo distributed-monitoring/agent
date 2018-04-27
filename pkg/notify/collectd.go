@@ -23,11 +23,14 @@ import (
 	"time"
 )
 
+// CollectdNotifier is an implementation of Notifier by collectd.
+// Process using this package should be started by collectd-exec.
 type CollectdNotifier struct {
 	PluginName string
 	TypeName   string
 }
 
+// Send is to notify message with collectd notification.
 func (thisNotify CollectdNotifier) Send(message string, severity string, metaData [][2]string) error {
 	unixNow := float64(time.Now().UnixNano()) / 1000000000
 
