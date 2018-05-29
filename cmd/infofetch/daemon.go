@@ -29,7 +29,6 @@ var InfoPool annotate.RedisPool
 
 func main() {
 	var waitgroup sync.WaitGroup
-	ctx := context.Background()
 	libvirt.EventRegisterDefaultImpl()
 
 	redisClient := redis.NewClient(&redis.Options{
@@ -47,14 +46,26 @@ func main() {
 	}
 	defer conn.Close()
 
-	//Get active VM info
-	GetActiveDomain(conn)
+	vmIfInfoChan := make(chan string)
+	{
+		ctx := context.Background()
+		waitgroup.Add(1)
+		go func() {
+			RunNeutronInfoFetch(ctx, vmIfInfoChan)
+			waitgroup.Done()
+		}()
+	}
 
-	waitgroup.Add(1)
-	go func() {
-		RunVirshEventLoop(ctx, conn)
-		waitgroup.Done()
-	}()
+	//Get active VM info
+	GetActiveDomain(conn, vmIfInfoChan)
+	{
+		ctx := context.Background()
+		waitgroup.Add(1)
+		go func() {
+			RunVirshEventLoop(ctx, conn, vmIfInfoChan)
+			waitgroup.Done()
+		}()
+	}
 
 	waitgroup.Wait()
 }

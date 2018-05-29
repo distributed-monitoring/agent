@@ -14,20 +14,17 @@
  *   limitations under the License.
  */
 
-/*
- * Todo:
- *  - Periodically fetch VMInfo/NetInfo/PortInfo, instead of on-demand.
- */
-
 package main
 
 import (
 	"bytes"
 	"net/http"
 	"os"
+	"log"
 	"strings"
 	"fmt"
 	"time"
+	"context"
 	"io/ioutil"
 	"text/template"
 	"encoding/json"
@@ -438,6 +435,79 @@ func GetComputeReply (token *Token, endpoint string) (NovaComputeReply, error) {
 	}
 
 	return repl, nil
+}
+
+type OSNeutronInterfaceAnnotation struct {
+	IfName string
+	VMName string
+	NetworkName string
+}
+
+func RunNeutronInfoFetch(ctx context.Context, vmIfInfo chan string) error {
+	token, err := GetToken()
+
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "cannot get token: %v\n", err)
+		return err
+	}
+
+	svc, _ := GetServiceList(token)
+	neuId, _ := svc.GetService("neutron")
+	//fmt.Printf("neutron id:%s\n", id.ID)
+
+	novaId, _ := svc.GetService("nova")
+	//fmt.Printf("nova id:%s\n", id.ID)
+
+	endpoints, _ := GetEndpoints(token)
+	neuEndpoint, _ := endpoints.GetEndpoint(neuId.ID, "admin")
+	//fmt.Printf("neutron endpoint:%s\n", neuEndpoint.URL)
+
+	novaEndpoint, _ := endpoints.GetEndpoint(novaId.ID, "admin")
+	//fmt.Printf("nova endpoint:%s\n", novaEndpoint.URL)
+
+	GetComputeReply(token, novaEndpoint.URL)
+	GetNeutronPorts(token, neuEndpoint.URL)
+	//vmrepl, _ := GetComputeReply(token, novaEndpoint.URL)
+	//prepl, _ := GetNeutronPorts(token, neuEndpoint.URL)
+
+	for {
+		select {
+		case <-ctx.Done():
+			break
+		case key := <-vmIfInfo:
+			log.Printf("incoming IF: %v", key)
+			libvirtIfInfo, err := InfoPool.Get(key)
+			if err != nil {
+				log.Fatalf("err: %v", err)
+			} else {
+				var ifInfo OSVMInterfaceAnnotation
+				err = json.Unmarshal([]byte(libvirtIfInfo), &ifInfo)
+				if err != nil {
+					log.Fatalf("err: %v", err)
+				} else {
+					vmrepl, _ := GetComputeReply(token, novaEndpoint.URL)
+					prepl, _ := GetNeutronPorts(token, neuEndpoint.URL)
+					nrepl, _ := GetNetworkReply(token, neuEndpoint.URL)
+					netid, _ := prepl.GetNeutronPortfromMAC(ifInfo.MacAddr)
+					net, _ := nrepl.GetNetworkFromID(netid.NetworkID)
+					vm, _ := vmrepl.GetComputeFromID(netid.DeviceID)
+					osIfInfo := OSNeutronInterfaceAnnotation{
+						IfName: ifInfo.Target,
+						VMName: vm.Name,
+						NetworkName: net.Name }
+
+					osIfInfoJson, err := json.Marshal(osIfInfo)
+					if err != nil {
+						log.Fatalf("err: %v", err)
+					} else {
+						log.Printf("vmname: %s / networkname:%s\n", vm.Name, net.Name)
+						InfoPool.Set(fmt.Sprintf("if/%s/%s", ifInfo.Target, "neutron_network"), string(osIfInfoJson))
+					}
+				}
+			}
+		}
+	}
+	return nil
 }
 
 /*
