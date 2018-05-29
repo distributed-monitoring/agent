@@ -64,8 +64,8 @@ func zrangebyscore(client *redis.Client, key string, pool annotate.Pool, notifie
 			message.WriteString(strconv.Itoa(minThresh))
 			message.WriteString(".")
 
-			nameVal, _ := pool.Get("virt_name", virtName)
-			ifVal, _ := pool.Get("virt_if", virtIF)
+			nameVal, _ := pool.Get(fmt.Sprintf("%s/%s", "virt_name", virtName))
+			ifVal, _ := pool.Get(fmt.Sprintf("%s/%s", "virt_if", virtIF))
 
 			nameInfo := fmt.Sprintf("{\"%s\": %s}", virtName, nameVal)
 			ifInfo := fmt.Sprintf("{\"%s\": %s}", virtIF, ifVal)

@@ -17,10 +17,10 @@
 package annotate
 
 // Pool is an interface of DB pool to annotate.
-// e.g. Set("virt_name", "instance-00000001", "{"OS-name": "testvm1"}")
-// e.g. Set("virt_if", "tap1e793b2b-8e", "{"OS-uuid": "df846647-c16a-4d8a-842a-ac39bd4a971e"}")
+// e.g. Set("virt_name/instance-00000001", "{"OS-name": "testvm1"}")
+// e.g. Set("virt_if/tap1e793b2b-8e", "{"OS-uuid": "df846647-c16a-4d8a-842a-ac39bd4a971e"}")
 type Pool interface {
-	Set(string, string, string) error   // (infoType, infoName, JsonData)
-	Get(string, string) (string, error) // (infoType, infoName)
-	Del(string, string) error           // (infoType, infoName)
+	Set(string, string) error   // (key, JsonData)
+	Get(string) (string, error) // (key, infoName)
+	Del(string) error           // (key)
 }

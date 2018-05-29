@@ -29,8 +29,8 @@ type RedisPool struct {
 }
 
 // Set is to set data in redis.
-func (thisPool RedisPool) Set(infoType string, infoName string, data string) error {
-	key := redisLabel + "/" + infoType + "/" + infoName
+func (thisPool RedisPool) Set(key string, data string) error {
+	key = redisLabel + "/" + key
 	err := thisPool.Client.Set(key, data, 0).Err()
 	if err != nil {
 		log.Printf("redis Set error: %s", err)
@@ -39,8 +39,8 @@ func (thisPool RedisPool) Set(infoType string, infoName string, data string) err
 }
 
 // Get is to get data in redis.
-func (thisPool RedisPool) Get(infoType string, infoName string) (string, error) {
-	key := redisLabel + "/" + infoType + "/" + infoName
+func (thisPool RedisPool) Get(key string) (string, error) {
+	key = redisLabel + "/" + key
 	value, err := thisPool.Client.Get(key).Result()
 	if err != nil {
 		log.Printf("redis Get error: %s", err)
@@ -49,11 +49,26 @@ func (thisPool RedisPool) Get(infoType string, infoName string) (string, error) 
 }
 
 // Del is to delete data in redis.
-func (thisPool RedisPool) Del(infoType string, infoName string) error {
-	key := redisLabel + "/" + infoType + "/" + infoName
+func (thisPool RedisPool) Del(key string) error {
+	key = redisLabel + "/" + key
 	err := thisPool.Client.Del(key).Err()
 	if err != nil {
 		log.Printf("redis Del error: %s", err)
+	}
+	return err
+}
+
+// DelAll is to delete all data, begins with <redisLabel>, in redis.
+func (thisPool RedisPool) DelAll() error {
+	pattern := redisLabel + "/*"
+
+	keys, err := thisPool.Client.Keys(pattern).Result()
+	if err != nil {
+		log.Printf("redis Keys error :%s", err)
+	}
+
+	for _, v := range keys {
+		thisPool.Client.Del(v)
 	}
 	return err
 }

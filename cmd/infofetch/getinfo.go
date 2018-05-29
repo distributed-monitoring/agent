@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 NEC Corporation
+ * Copyright 2017 NEC Corporation
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -17,14 +17,11 @@
 package main
 
 import (
-	"github.com/distributed-monitoring/agent/pkg/annotate"
 	libvirt "github.com/libvirt/libvirt-go"
-	"io/ioutil"
-	"fmt"
 	"log"
 )
 
-func writeInfo(infoPool annotate.Pool) {
+func getInfo() {
 	conn, err := libvirt.NewConnect("qemu:///system")
 	if err != nil {
 		log.Fatalln("libvirt connect error")
@@ -33,21 +30,15 @@ func writeInfo(infoPool annotate.Pool) {
 
 	doms, err := conn.ListAllDomains(libvirt.CONNECT_LIST_DOMAINS_ACTIVE)
 	if err != nil {
-		log.Fatalf("libvirt dom list error: %s", err)
+		log.Fatalln("libvirt command error")
 	}
-	log.Printf("%d running domains:\n", len(doms))
 
+	log.Printf("%d running domains:\n", len(doms))
 	for _, dom := range doms {
 		name, err := dom.GetName()
-		if err != nil {
-			log.Fatalf("virt GetName error: %s", err)
+		if err == nil {
+			log.Printf("  %s\n", name)
 		}
 		dom.Free()
-		infoPool.Set(fmt.Sprintf("%s/%s", "virt_name", name), "{\"OS-name\": \"testvm-?\"}")
-	}
-
-	files, _ := ioutil.ReadDir("/sys/class/net")
-	for _, f := range files {
-		infoPool.Set(fmt.Sprintf("%s/%s", "virt_if", f.Name()), "{\"hwaddr\": \"aa:bb:cc:dd:ee:ff\"}")
 	}
 }

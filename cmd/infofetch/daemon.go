@@ -17,27 +17,44 @@
 package main
 
 import (
+	"context"
+	libvirt "github.com/libvirt/libvirt-go"
+	"sync"
+	"log"
 	"github.com/distributed-monitoring/agent/pkg/annotate"
 	"github.com/go-redis/redis"
-	"time"
 )
 
+var InfoPool annotate.RedisPool
+
 func main() {
+	var waitgroup sync.WaitGroup
+	ctx := context.Background()
+	libvirt.EventRegisterDefaultImpl()
+
 	redisClient := redis.NewClient(&redis.Options{
 		Addr:     "localhost:6379",
 		Password: "",
 		DB:       0,
 	})
-	infoPool := annotate.RedisPool{Client: redisClient}
+	InfoPool = annotate.RedisPool{Client: redisClient}
+	// Initialize redis db...
+	InfoPool.DelAll()
 
-	forever := make(chan bool)
+	conn, err := libvirt.NewConnect("qemu:///system")
+	if err != nil {
+		log.Fatalln("libvirt connect error")
+	}
+	defer conn.Close()
 
-	ticker := time.NewTicker(5 * time.Second)
+	//Get active VM info
+	GetActiveDomain(conn)
+
+	waitgroup.Add(1)
 	go func() {
-		for range ticker.C {
-			writeInfo(infoPool)
-		}
+		RunVirshEventLoop(ctx, conn)
+		waitgroup.Done()
 	}()
 
-	<-forever
+	waitgroup.Wait()
 }
