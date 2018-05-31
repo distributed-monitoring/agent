@@ -19,6 +19,7 @@ package main
 import (
 	"bytes"
 	"net/http"
+	"net/url"
 	"os"
 	"log"
 	"strings"
@@ -414,11 +415,15 @@ func (n *NovaComputeReply) GetComputeFromID (vmid string) (*NovaCompute, error) 
 
 func GetComputeReply (token *Token, endpoint string) (NovaComputeReply, error) {
 	token.CheckToken()
+	values := url.Values{}
+	values.Add("all_tenants", "1")
+
 	req, err := http.NewRequest("GET", endpoint+"/servers", nil)
 	if err != nil {
 		return NovaComputeReply{}, fmt.Errorf("Request failed:%v", err)
 	}
 	req.Header.Set("X-Auth-Token", token.Token)
+	req.URL.RawQuery = values.Encode()
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
