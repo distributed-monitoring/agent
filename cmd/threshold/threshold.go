@@ -64,8 +64,8 @@ func zrangebyscore(client *redis.Client, key string, pool annotate.Pool, notifie
 			message.WriteString(strconv.Itoa(minThresh))
 			message.WriteString(".")
 
-			nameVal, _ := pool.Get(fmt.Sprintf("%s/%s", "virt_name", virtName))
-			ifVal, _ := pool.Get(fmt.Sprintf("%s/%s", "virt_if", virtIF))
+			nameVal, _ := pool.Get(fmt.Sprintf("%s/%s/vminfo", "vm", virtName))
+			ifVal, _ := pool.Get(fmt.Sprintf("%s/%s/neutron_network", "if", virtIF))
 
 			nameInfo := fmt.Sprintf("{\"%s\": %s}", virtName, nameVal)
 			ifInfo := fmt.Sprintf("{\"%s\": %s}", virtIF, ifVal)
@@ -75,7 +75,7 @@ func zrangebyscore(client *redis.Client, key string, pool annotate.Pool, notifie
 
 			notifier.Send(message.String(),
 				"warning",
-				[][2]string{{"virt_name", nameInfo}, {"virt_if", ifInfo}})
+				[][2]string{{"vminfo", nameInfo}, {"neutron_network", ifInfo}})
 		}
 	}
 }
