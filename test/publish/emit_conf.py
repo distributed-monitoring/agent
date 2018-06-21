@@ -14,7 +14,7 @@ conffilename = argvs[1]
 
 credentials=pika.PlainCredentials('guest', os.environ['AMQP_PASSWORD'])
 connection = pika.BlockingConnection(pika.ConnectionParameters(
-        host='192.0.2.11', credentials=credentials))
+        host=os.environ['AMQP_HOST'], credentials=credentials))
 channel = connection.channel()
 
 channel.exchange_declare(exchange='collectd-conf',

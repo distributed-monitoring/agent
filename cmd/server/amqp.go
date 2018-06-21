@@ -26,7 +26,8 @@ import (
 // confDirPath is defined in main.go
 
 var amqpPass = os.Getenv("AMQP_PASSWORD")
-var amqpURL = "amqp://guest:" + amqpPass + "@192.0.2.11:5672/"
+var amqpHost = os.Getenv("AMQP_HOST")
+var amqpURL = "amqp://guest:" + amqpPass + "@" + amqpHost + ":5672/"
 
 func failOnError(err error, msg string) {
 	if err != nil {
