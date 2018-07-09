@@ -18,6 +18,7 @@ package main
 
 import (
 	"flag"
+	"github.com/BurntSushi/toml"
 	"log"
 )
 
@@ -25,12 +26,32 @@ var serverTypeOpt = flag.String("type", "pubsub", "server type: pubsub, api")
 
 const confDirPath = "/etc/collectd/collectd.conf.d/"
 
+// Config is ...
+type Config struct {
+	Amqp AmqpConfig
+}
+
+// AmqpConfig is ...
+type AmqpConfig struct {
+	Host     string
+	User     string
+	Password string
+	Port     string
+}
+
 func main() {
+
+	var config Config
+	_, err := toml.DecodeFile("../../config/config.toml", &config)
+	if err != nil {
+		log.Println("read error of amqp config")
+	}
+
 	flag.Parse()
 
 	switch *serverTypeOpt {
 	case "pubsub":
-		runSubscriber()
+		runSubscriber(&config.Amqp)
 	case "api":
 		runAPIServer()
 	default:
