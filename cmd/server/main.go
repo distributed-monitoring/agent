@@ -24,11 +24,10 @@ import (
 
 var serverTypeOpt = flag.String("type", "pubsub", "server type: pubsub, api")
 
-const confDirPath = "/etc/collectd/collectd.conf.d/"
-
 // Config is ...
 type Config struct {
-	Amqp AmqpConfig
+	Amqp     AmqpConfig
+	Collectd CollectdConfig
 }
 
 // AmqpConfig is ...
@@ -39,21 +38,26 @@ type AmqpConfig struct {
 	Port     string
 }
 
+// CollectdConfig is ...
+type CollectdConfig struct {
+	ConfDir string
+}
+
 func main() {
 
 	var config Config
 	_, err := toml.DecodeFile("../../config/config.toml", &config)
 	if err != nil {
-		log.Println("read error of amqp config")
+		log.Println("read error of config file")
 	}
 
 	flag.Parse()
 
 	switch *serverTypeOpt {
 	case "pubsub":
-		runSubscriber(&config.Amqp)
+		runSubscriber(&config)
 	case "api":
-		runAPIServer()
+		runAPIServer(&config.Collectd)
 	default:
 		log.Fatalln("server type is wrong, see help.")
 	}

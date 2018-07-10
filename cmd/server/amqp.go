@@ -23,18 +23,19 @@ import (
 	"strings"
 )
 
-// confDirPath is defined in main.go
-
 func failOnError(err error, msg string) {
 	if err != nil {
 		log.Fatalf("%s: %s", msg, err)
 	}
 }
 
-func runSubscriber(amqpConf *AmqpConfig) {
+func runSubscriber(config *Config) {
+	confDirPath := config.Collectd.ConfDir
+	amqpConf := config.Amqp
 	amqpURL := "amqp://" + amqpConf.User + ":" + amqpConf.Password + "@" + amqpConf.Host + ":" + amqpConf.Port + "/"
 	conn, err := amqp.Dial(amqpURL)
 	failOnError(err, "Failed to connect to RabbitMQ")
+
 	defer conn.Close()
 
 	ch, err := conn.Channel()
