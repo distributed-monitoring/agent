@@ -3,29 +3,29 @@ package main
 import (
 	"bytes"
 	"fmt"
+	"github.com/BurntSushi/toml"
 	"github.com/distributed-monitoring/agent/pkg/annotate"
 	"github.com/distributed-monitoring/agent/pkg/notify"
 	"github.com/go-redis/redis"
+	"log"
 	"os"
 	"strconv"
 	"strings"
 	"time"
 )
 
-const interval = 5 //collectd interval
+const confFileAnno = "config_annotate.toml"
+const confFileEval = "config_evaluate.toml"
 
 // e.g. collectd/instance-00000001/virt/if_octets-tapd21acb51-35
 const redisKey = "collectd/*/virt/if_octets-*"
-const minThresh = 1000000
 
-// exceed by exec `sudo ping <IP> -i 0.00005 -c 1000 -s 1000`
-
-func zrangebyscore(client *redis.Client, key string, pool annotate.Pool, notifier notify.Notifier) {
+func zrangebyscore(client *redis.Client, key string, pool annotate.Pool, config *ThresholdConfig, notifier notify.Notifier) {
 
 	unixNow := int(time.Now().Unix())
 
 	val, err := client.ZRangeByScore(key, redis.ZRangeBy{
-		Min: strconv.Itoa(unixNow - interval),
+		Min: strconv.Itoa(unixNow - config.Interval),
 		Max: strconv.Itoa(unixNow),
 	}).Result()
 
@@ -48,7 +48,7 @@ func zrangebyscore(client *redis.Client, key string, pool annotate.Pool, notifie
 				maxVal = intVal
 			}
 		}
-		if maxVal > minThresh {
+		if maxVal > config.Min {
 
 			fmt.Println("kick action")
 
@@ -61,7 +61,7 @@ func zrangebyscore(client *redis.Client, key string, pool annotate.Pool, notifie
 			message.WriteString("Value ")
 			message.WriteString(strconv.Itoa(maxVal))
 			message.WriteString(" exceeded threshold ")
-			message.WriteString(strconv.Itoa(minThresh))
+			message.WriteString(strconv.Itoa(config.Min))
 			message.WriteString(".")
 
 			nameVal, _ := pool.Get(fmt.Sprintf("%s/%s/vminfo", "vm", virtName))
@@ -86,34 +86,92 @@ func action(val int) {
 }
 */
 
-func checkVirtIF(client *redis.Client, pool annotate.Pool, notifier notify.Notifier) {
+func checkVirtIF(client *redis.Client, pool annotate.Pool, config *ThresholdConfig, notifier notify.Notifier) {
 	keys, err := client.Keys(redisKey).Result()
 	if err != nil {
 		panic(err)
 	}
 	for _, key := range keys {
-		zrangebyscore(client, key, pool, notifier)
+		zrangebyscore(client, key, pool, config, notifier)
 	}
 }
 
-func main() {
+// Config is ...
+type Config struct {
+	Annotate AnnotateConfig
+	Evaluate EvaluateConfig
+}
 
+// AnnotateConfig is ...
+type AnnotateConfig struct {
+	Redis RedisConfig
+}
+
+// EvaluateConfig is ...
+type EvaluateConfig struct {
+	Redis     RedisConfig
+	Threshold ThresholdConfig
+	Collectd  CollectdConfig
+}
+
+// RedisConfig is ...
+type RedisConfig struct {
+	Ipaddress string
+	Port      string
+	Password  string
+	DB        int
+}
+
+// ThresholdConfig is ...
+type ThresholdConfig struct {
+	Interval int
+	Min      int
+}
+
+// CollectdConfig is ...
+type CollectdConfig struct {
+	Plugin string
+	Type   string
+}
+
+func main() {
+	var config Config
+	_, err := toml.DecodeFile(confFileAnno, &config.Annotate)
+	if err != nil {
+		log.Fatalf("read error of annotate config: %s", err)
+	}
+	_, err2 := toml.DecodeFile(confFileEval, &config.Evaluate)
+	if err2 != nil {
+		log.Fatalf("read error of evaluate config: %s", err2)
+	}
+
+	redisConfig := config.Annotate.Redis
+	log.Printf("annotate redis config : %s:%s XXXXX %d", redisConfig.Ipaddress, redisConfig.Port, redisConfig.DB)
 	client := redis.NewClient(&redis.Options{
-		Addr:     "localhost:6379",
-		Password: "",
-		DB:       0,
+		Addr:     redisConfig.Ipaddress + ":" + redisConfig.Port,
+		Password: redisConfig.Password,
+		DB:       redisConfig.DB,
 	})
 	infoPool := annotate.RedisPool{Client: client}
 
+	redisConfig = config.Evaluate.Redis
+	log.Printf("evaluate redis config : %s:%s XXXXX %d", redisConfig.Ipaddress, redisConfig.Port, redisConfig.DB)
+	rawStore := redis.NewClient(&redis.Options{
+		Addr:     redisConfig.Ipaddress + ":" + redisConfig.Port,
+		Password: redisConfig.Password,
+		DB:       redisConfig.DB,
+	})
+
+	collectdConfig := config.Evaluate.Collectd
 	notifier := notify.CollectdNotifier{
-		PluginName: "barometer-localagent",
-		TypeName:   "if-octets-threshold"}
+		PluginName: collectdConfig.Plugin,
+		TypeName:   collectdConfig.Type}
 
 	//how to stop after compile...
-	ticker := time.NewTicker(interval * time.Second)
+	ticker := time.NewTicker(time.Duration(config.Evaluate.Threshold.Interval) * time.Second)
 
 	for range ticker.C {
-		checkVirtIF(client, infoPool, notifier)
+		checkVirtIF(rawStore, infoPool, &config.Evaluate.Threshold, notifier)
 	}
 
 	fmt.Println("end")
