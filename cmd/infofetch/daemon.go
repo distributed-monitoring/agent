@@ -44,11 +44,10 @@ type RedisConfig struct {
 func main() {
 
 	var config Config
-	_, err := tomlDecodeFile("../../config/config.toml", &config)
+	_, err := toml.DecodeFile("../../config/config.toml", &config)
 	if err != nil {
 		log.Println("read error of config file")
 	}
-	fmt.Pringln(config.RedisConfig.Host)
 
 	var waitgroup sync.WaitGroup
 	libvirt.EventRegisterDefaultImpl()
