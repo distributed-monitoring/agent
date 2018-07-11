@@ -53,9 +53,9 @@ func main() {
 	libvirt.EventRegisterDefaultImpl()
 
 	redisClient := redis.NewClient(&redis.Options{
-		Addr:     config.RedisConfig.Host + ":" + config.RedisConfig.Port,
-		Password: config.RedisConfig.Passwrd,
-		DB:       config.RedisConfig.DB,
+		Addr:     config.Redis.Host + ":" + config.Redis.Port,
+		Password: config.Redis.Passwrd,
+		DB:       config.Redis.DB,
 	})
 	InfoPool = annotate.RedisPool{Client: redisClient}
 	// Initialize redis db...
