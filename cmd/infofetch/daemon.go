@@ -18,23 +18,45 @@ package main
 
 import (
 	"context"
-	libvirt "github.com/libvirt/libvirt-go"
-	"sync"
-	"log"
+	"github.com/BurntSushi/toml"
 	"github.com/distributed-monitoring/agent/pkg/annotate"
 	"github.com/go-redis/redis"
+	libvirt "github.com/libvirt/libvirt-go"
+	"log"
+	"sync"
 )
 
 var InfoPool annotate.RedisPool
 
+// Config is ...
+type Config struct {
+	Redis Config
+}
+
+// RedisConfig is ...
+type RedisConfig struct {
+	Host     string
+	Port     string
+	Password string
+	DB       int
+}
+
 func main() {
+
+	var config Config
+	_, err := tomlDecodeFile("../../config/config.toml", &config)
+	if err != nil {
+		log.Println("read error of config file")
+	}
+	fmt.Pringln(config.RedisConfig.Host)
+
 	var waitgroup sync.WaitGroup
 	libvirt.EventRegisterDefaultImpl()
 
 	redisClient := redis.NewClient(&redis.Options{
-		Addr:     "localhost:6379",
-		Password: "",
-		DB:       0,
+		Addr:     config.RedisConfig.Host + ":" + config.RedisConfig.Port,
+		Password: config.RedisConfig.Passwrd,
+		DB:       config.RedisConfig.DB,
 	})
 	InfoPool = annotate.RedisPool{Client: redisClient}
 	// Initialize redis db...
