@@ -240,10 +240,11 @@ func RunVirshEventLoop(ctx context.Context, conn *libvirt.Connect, vmIfInfoChan 
 	}
 
 	log.Printf("Entering libvirt event loop()")
+	EVENTLOOP:
 	for {
 		select {
 		case <-ctx.Done():
-			break
+			break EVENTLOOP
 		default:
 			if err := libvirt.EventRunDefaultImpl(); err != nil {
 				log.Fatalf("%v", err)
