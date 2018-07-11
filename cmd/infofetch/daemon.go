@@ -30,7 +30,7 @@ var InfoPool annotate.RedisPool
 
 // Config is ...
 type Config struct {
-	Redis Config
+	Redis RedisConfig
 }
 
 // RedisConfig is ...
