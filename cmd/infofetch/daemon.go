@@ -54,7 +54,7 @@ func main() {
 
 	redisClient := redis.NewClient(&redis.Options{
 		Addr:     config.Redis.Host + ":" + config.Redis.Port,
-		Password: config.Redis.Passwrd,
+		Password: config.Redis.Password,
 		DB:       config.Redis.DB,
 	})
 	InfoPool = annotate.RedisPool{Client: redisClient}
