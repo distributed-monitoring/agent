@@ -25,7 +25,7 @@ import (
 	"github.com/go-redis/redis"
 )
 
-var InfoPool annotate.RedisPool
+var infoPool annotate.RedisPool
 
 func main() {
 	var waitgroup sync.WaitGroup
@@ -36,9 +36,9 @@ func main() {
 		Password: "",
 		DB:       0,
 	})
-	InfoPool = annotate.RedisPool{Client: redisClient}
+	infoPool = annotate.RedisPool{Client: redisClient}
 	// Initialize redis db...
-	InfoPool.DelAll()
+	infoPool.DelAll()
 
 	conn, err := libvirt.NewConnect("qemu:///system")
 	if err != nil {
