@@ -31,7 +31,7 @@ import (
 	"encoding/json"
 )
 
-type UserInfo struct {
+type userInfo struct {
 	UserDomainName string
 	UserName string
 	Password string
@@ -39,7 +39,7 @@ type UserInfo struct {
 	ProjectName string
 }
 
-var token_json_template string = `{
+var tokenJSONTemplate = `{
   "auth": {
     "identity": {
       "methods": [
@@ -67,7 +67,7 @@ var token_json_template string = `{
 }
 `
 
-type TokenReply struct {
+type tokenReply struct {
 	Token struct {
 		IsDomain bool     `json:"is_domain"`
 		Methods  []string `json:"methods"`
@@ -98,26 +98,26 @@ type TokenReply struct {
 	} `json:"token"`
 }
 
-type Token struct {
+type token struct {
 	Token string
 	ExpiresAt time.Time
 }
 
-func (t *Token) CheckToken() {
+func (t *token) CheckToken() {
 	now := time.Now()
 
 	if t.ExpiresAt.Sub(now).Seconds() < 30 {
-		newToken, _ := GetToken()
+		newToken, _ := getToken()
 		t.Token = newToken.Token
 		t.ExpiresAt = newToken.ExpiresAt
 	}
 }
 
-func GetToken () (*Token, error) {
+func getToken () (*token, error) {
 	var buf bytes.Buffer
 
-	t := template.Must(template.New("json template1").Parse(token_json_template))
-	p := UserInfo {
+	t := template.Must(template.New("json template1").Parse(tokenJSONTemplate))
+	p := userInfo {
 		UserDomainName: os.ExpandEnv("$OS_USER_DOMAIN_NAME"),
 		UserName: os.ExpandEnv("$OS_USERNAME"),
 		Password: os.ExpandEnv("$OS_PASSWORD"),
@@ -129,30 +129,30 @@ func GetToken () (*Token, error) {
 	body := bytes.NewReader(buf.Bytes())
 	req, err := http.NewRequest("POST", os.ExpandEnv("$OS_AUTH_URL/auth/tokens?nocatalog"), body)
 	if err != nil {
-		return &Token{"", time.Unix(0, 0)}, fmt.Errorf("Http request failed: %v", err)
+		return &token{"", time.Unix(0, 0)}, fmt.Errorf("Http request failed: %v", err)
 	}
 	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return &Token{"", time.Unix(0, 0)}, fmt.Errorf("Http POST failed: %v", err)
+		return &token{"", time.Unix(0, 0)}, fmt.Errorf("Http POST failed: %v", err)
 	}
 	defer resp.Body.Close()
 	b, err := ioutil.ReadAll(resp.Body)
 
 	tokenStr, ok := resp.Header["X-Subject-Token"]
 	if ok != true && len(tokenStr) != 1 {
-		return &Token{"", time.Unix(0, 0)}, fmt.Errorf("no token in openstack reply")
+		return &token{"", time.Unix(0, 0)}, fmt.Errorf("no token in openstack reply")
 	}
 
-	var repl TokenReply
+	var repl tokenReply
 	err = json.Unmarshal(b, &repl)
 
-	return &Token{tokenStr[0], repl.Token.ExpiresAt}, nil
+	return &token{tokenStr[0], repl.Token.ExpiresAt}, nil
 }
 
 
-type Service struct {
+type service struct {
 	Description string `json:"description"`
 	Links       struct {
 		Self string `json:"self"`
@@ -163,11 +163,11 @@ type Service struct {
 	Name    string `json:"name"`
 }
 
-type ServiceListReply struct {
-	Services []Service `json:"services"`
+type serviceListReply struct {
+	Services []service `json:"services"`
 }
 
-func (s *ServiceListReply) GetService (name string) (*Service, error) {
+func (s *serviceListReply) GetService (name string) (*service, error) {
 	for _, v:= range s.Services {
 		if v.Name == name {
 			return &v, nil
@@ -176,7 +176,7 @@ func (s *ServiceListReply) GetService (name string) (*Service, error) {
 	return nil, fmt.Errorf("No service id (%s) found", name)
 }
 
-type EndPoint struct {
+type endPoint struct {
 	RegionID string `json:"region_id"`
 	Links    struct {
 		Self string `json:"self"`
@@ -189,11 +189,11 @@ type EndPoint struct {
 	ID        string `json:"id"`
 }
 
-type EndPointReply struct {
-	Endpoints []EndPoint `json:"endpoints"`
+type endPointReply struct {
+	Endpoints []endPoint `json:"endpoints"`
 }
 
-func (e *EndPointReply) GetEndpoint (serviceid string, ifname string) (*EndPoint, error) {
+func (e *endPointReply) GetEndpoint (serviceid string, ifname string) (*endPoint, error) {
 	for _, v := range e.Endpoints {
 		if v.Interface == ifname && v.ServiceID == serviceid {
 			return &v, nil
@@ -202,56 +202,56 @@ func (e *EndPointReply) GetEndpoint (serviceid string, ifname string) (*EndPoint
 	return nil, fmt.Errorf("no endpoint found (%s/%s)", serviceid, ifname)
 }
 
-func GetEndpoints (token *Token) (EndPointReply, error) {
+func getEndpoints (token *token) (endPointReply, error) {
 	token.CheckToken()
 	req, err := http.NewRequest("GET", os.ExpandEnv("$OS_AUTH_URL/endpoints"), nil)
 	if err != nil {
-		return EndPointReply{}, fmt.Errorf("Request failed:%v", err)
+		return endPointReply{}, fmt.Errorf("Request failed:%v", err)
 	}
 	req.Header.Set("X-Auth-Token", token.Token)
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return EndPointReply{}, fmt.Errorf("http GET failed:%v", err)
+		return endPointReply{}, fmt.Errorf("http GET failed:%v", err)
 	}
 	defer resp.Body.Close()
 
 	b, err := ioutil.ReadAll(resp.Body)
 	//fmt.Printf("%s", string(b))
 
-	var repl EndPointReply
+	var repl endPointReply
 	err = json.Unmarshal(b, &repl)
 	if err != nil {
-		return EndPointReply{}, fmt.Errorf("http reply decoding failed:%v", err)
+		return endPointReply{}, fmt.Errorf("http reply decoding failed:%v", err)
 	}
 	//fmt.Printf("%v", repl)
 	return repl, nil
 }
 
-func GetServiceList (token *Token) (ServiceListReply, error) {
+func getServiceList (token *token) (serviceListReply, error) {
 	token.CheckToken()
 	req, err := http.NewRequest("GET", os.ExpandEnv("$OS_AUTH_URL/services"), nil)
 	if err != nil {
-		return ServiceListReply{}, fmt.Errorf("Request failed:%v", err)
+		return serviceListReply{}, fmt.Errorf("Request failed:%v", err)
 	}
 	req.Header.Set("X-Auth-Token", token.Token)
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return ServiceListReply{}, fmt.Errorf("http GET failed:%v", err)
+		return serviceListReply{}, fmt.Errorf("http GET failed:%v", err)
 	}
 	defer resp.Body.Close()
 	b, err := ioutil.ReadAll(resp.Body)
 
-	var repl ServiceListReply
+	var repl serviceListReply
 	err = json.Unmarshal(b, &repl)
 	if err != nil {
-		return ServiceListReply{}, fmt.Errorf("http reply decoding failed:%v", err)
+		return serviceListReply{}, fmt.Errorf("http reply decoding failed:%v", err)
 	}
 	return repl, nil
 }
 
-type NeutronPort struct {
+type neutronPort struct {
 	AllowedAddressPairs []interface{} `json:"allowed_address_pairs"`
 	ExtraDhcpOpts       []interface{} `json:"extra_dhcp_opts"`
 	UpdatedAt           time.Time     `json:"updated_at"`
@@ -288,35 +288,35 @@ type NeutronPort struct {
 	DeviceID        string        `json:"device_id"`
 }
 
-type NeutronPortReply struct {
-	Ports []NeutronPort `json:"ports"`
+type neutronPortReply struct {
+	Ports []neutronPort `json:"ports"`
 }
 
-func GetNeutronPorts (token *Token, endpoint string) (NeutronPortReply, error) {
+func getNeutronPorts (token *token, endpoint string) (neutronPortReply, error) {
 	token.CheckToken()
 	req, err := http.NewRequest("GET", endpoint+"/v2.0/ports", nil)
 	if err != nil {
-		return NeutronPortReply{}, fmt.Errorf("Request failed:%v", err)
+		return neutronPortReply{}, fmt.Errorf("Request failed:%v", err)
 	}
 	req.Header.Set("X-Auth-Token", token.Token)
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return NeutronPortReply{}, fmt.Errorf("http GET failed:%v", err)
+		return neutronPortReply{}, fmt.Errorf("http GET failed:%v", err)
 	}
 	defer resp.Body.Close()
 
 	b, err := ioutil.ReadAll(resp.Body)
 
-	var repl NeutronPortReply
+	var repl neutronPortReply
 	err = json.Unmarshal(b, &repl)
 	if err != nil {
-		return NeutronPortReply{}, fmt.Errorf("http reply decoding failed:%v", err)
+		return neutronPortReply{}, fmt.Errorf("http reply decoding failed:%v", err)
 	}
 	return repl, nil
 }
 
-func (n *NeutronPortReply) GetNeutronPortfromMAC (mac string) (*NeutronPort,
+func (n *neutronPortReply) GetNeutronPortfromMAC (mac string) (*neutronPort,
 	error) {
 	for _, v:= range n.Ports {
 		if v.MacAddress == strings.ToLower(mac) {
@@ -326,7 +326,7 @@ func (n *NeutronPortReply) GetNeutronPortfromMAC (mac string) (*NeutronPort,
 	return nil, fmt.Errorf("No port (%s) found", mac)
 }
 
-type NeutronNetwork struct {
+type neutronNetwork struct {
 	ProviderPhysicalNetwork string        `json:"provider:physical_network"`
 	Ipv6AddressScope        interface{}   `json:"ipv6_address_scope"`
 	RevisionNumber          int           `json:"revision_number"`
@@ -354,11 +354,11 @@ type NeutronNetwork struct {
 	ProviderNetworkType     string        `json:"provider:network_type"`
 }
 
-type NeutronNetworkReply struct {
-	Networks []NeutronNetwork `json:"networks"`
+type neutronNetworkReply struct {
+	Networks []neutronNetwork `json:"networks"`
 }
 
-func (n *NeutronNetworkReply) GetNetworkFromID (netid string) (*NeutronNetwork, error) {
+func (n *neutronNetworkReply) GetNetworkFromID (netid string) (*neutronNetwork, error) {
 	for _, v:= range n.Networks {
 		if v.ID == netid {
 			return &v, nil
@@ -367,31 +367,31 @@ func (n *NeutronNetworkReply) GetNetworkFromID (netid string) (*NeutronNetwork, 
 	return nil, fmt.Errorf("No network (%s) found", netid)
 }
 
-func GetNetworkReply (token *Token, endpoint string) (NeutronNetworkReply, error) {
+func getNetworkReply (token *token, endpoint string) (neutronNetworkReply, error) {
 	token.CheckToken()
 	req, err := http.NewRequest("GET", endpoint+"/v2.0/networks", nil)
 	if err != nil {
-		return NeutronNetworkReply{}, fmt.Errorf("Request failed:%v", err)
+		return neutronNetworkReply{}, fmt.Errorf("Request failed:%v", err)
 	}
 	req.Header.Set("X-Auth-Token", token.Token)
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return NeutronNetworkReply{}, fmt.Errorf("http GET failed:%v", err)
+		return neutronNetworkReply{}, fmt.Errorf("http GET failed:%v", err)
 	}
 	defer resp.Body.Close()
 
 	b, err := ioutil.ReadAll(resp.Body)
 
-	var repl NeutronNetworkReply
+	var repl neutronNetworkReply
 	err = json.Unmarshal(b, &repl)
 	if err != nil {
-		return NeutronNetworkReply{}, fmt.Errorf("http reply decoding failed:%v", err)
+		return neutronNetworkReply{}, fmt.Errorf("http reply decoding failed:%v", err)
 	}
 	return repl, nil
 }
 
-type NovaCompute struct {
+type novaCompute struct {
 	ID    string `json:"id"`
 	Links []struct {
 		Href string `json:"href"`
@@ -400,11 +400,11 @@ type NovaCompute struct {
 	Name string `json:"name"`
 }
 
-type NovaComputeReply struct {
-	Servers []NovaCompute `json:"servers"`
+type novaComputeReply struct {
+	Servers []novaCompute `json:"servers"`
 }
 
-func (n *NovaComputeReply) GetComputeFromID (vmid string) (*NovaCompute, error) {
+func (n *novaComputeReply) GetComputeFromID (vmid string) (*novaCompute, error) {
 	for _, v:= range n.Servers {
 		if v.ID == vmid {
 			return &v, nil
@@ -413,67 +413,70 @@ func (n *NovaComputeReply) GetComputeFromID (vmid string) (*NovaCompute, error) 
 	return nil, fmt.Errorf("No vm (%s) found", vmid)
 }
 
-func GetComputeReply (token *Token, endpoint string) (NovaComputeReply, error) {
+func getComputeReply (token *token, endpoint string) (novaComputeReply, error) {
 	token.CheckToken()
 	values := url.Values{}
 	values.Add("all_tenants", "1")
 
 	req, err := http.NewRequest("GET", endpoint+"/servers", nil)
 	if err != nil {
-		return NovaComputeReply{}, fmt.Errorf("Request failed:%v", err)
+		return novaComputeReply{}, fmt.Errorf("Request failed:%v", err)
 	}
 	req.Header.Set("X-Auth-Token", token.Token)
 	req.URL.RawQuery = values.Encode()
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return NovaComputeReply{}, fmt.Errorf("http GET failed:%v", err)
+		return novaComputeReply{}, fmt.Errorf("http GET failed:%v", err)
 	}
 	defer resp.Body.Close()
 
 	b, err := ioutil.ReadAll(resp.Body)
 
-	var repl NovaComputeReply
+	var repl novaComputeReply
 	err = json.Unmarshal(b, &repl)
 	if err != nil {
-		return NovaComputeReply{}, fmt.Errorf("http reply decoding failed:%v", err)
+		return novaComputeReply{}, fmt.Errorf("http reply decoding failed:%v", err)
 	}
 
 	return repl, nil
 }
 
-type OSNeutronInterfaceAnnotation struct {
+type osNeutronInterfaceAnnotation struct {
 	IfName string
 	VMName string
 	NetworkName string
 }
 
+// RunNeutronInfoFetch gets redis key update from libvirt and get network information
+// from Neutron with REST api. The retrieved information is stored under redis,
+// if/<tap name>/neutron_network
 func RunNeutronInfoFetch(ctx context.Context, vmIfInfo chan string) error {
-	token, err := GetToken()
+	token, err := getToken()
 
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "cannot get token: %v\n", err)
 		return err
 	}
 
-	svc, _ := GetServiceList(token)
-	neuId, _ := svc.GetService("neutron")
+	svc, _ := getServiceList(token)
+	neuID, _ := svc.GetService("neutron")
 	//fmt.Printf("neutron id:%s\n", id.ID)
 
-	novaId, _ := svc.GetService("nova")
+	novaID, _ := svc.GetService("nova")
 	//fmt.Printf("nova id:%s\n", id.ID)
 
-	endpoints, _ := GetEndpoints(token)
-	neuEndpoint, _ := endpoints.GetEndpoint(neuId.ID, "admin")
+	endpoints, _ := getEndpoints(token)
+	neuEndpoint, _ := endpoints.GetEndpoint(neuID.ID, "admin")
 	//fmt.Printf("neutron endpoint:%s\n", neuEndpoint.URL)
 
-	novaEndpoint, _ := endpoints.GetEndpoint(novaId.ID, "admin")
+	novaEndpoint, _ := endpoints.GetEndpoint(novaID.ID, "admin")
 	//fmt.Printf("nova endpoint:%s\n", novaEndpoint.URL)
 
-	GetComputeReply(token, novaEndpoint.URL)
-	GetNeutronPorts(token, neuEndpoint.URL)
-	//vmrepl, _ := GetComputeReply(token, novaEndpoint.URL)
-	//prepl, _ := GetNeutronPorts(token, neuEndpoint.URL)
+	getComputeReply(token, novaEndpoint.URL)
+	getNeutronPorts(token, neuEndpoint.URL)
+	//vmrepl, _ := getComputeReply(token, novaEndpoint.URL)
+	//prepl, _ := getNeutronPorts(token, neuEndpoint.URL)
 
 	for {
 		select {
@@ -481,32 +484,32 @@ func RunNeutronInfoFetch(ctx context.Context, vmIfInfo chan string) error {
 			break
 		case key := <-vmIfInfo:
 			log.Printf("incoming IF: %v", key)
-			libvirtIfInfo, err := InfoPool.Get(key)
+			libvirtIfInfo, err := infoPool.Get(key)
 			if err != nil {
 				log.Fatalf("err: %v", err)
 			} else {
-				var ifInfo OSVMInterfaceAnnotation
+				var ifInfo osVMInterfaceAnnotation
 				err = json.Unmarshal([]byte(libvirtIfInfo), &ifInfo)
 				if err != nil {
 					log.Fatalf("err: %v", err)
 				} else {
-					vmrepl, _ := GetComputeReply(token, novaEndpoint.URL)
-					prepl, _ := GetNeutronPorts(token, neuEndpoint.URL)
-					nrepl, _ := GetNetworkReply(token, neuEndpoint.URL)
+					vmrepl, _ := getComputeReply(token, novaEndpoint.URL)
+					prepl, _ := getNeutronPorts(token, neuEndpoint.URL)
+					nrepl, _ := getNetworkReply(token, neuEndpoint.URL)
 					netid, _ := prepl.GetNeutronPortfromMAC(ifInfo.MacAddr)
 					net, _ := nrepl.GetNetworkFromID(netid.NetworkID)
 					vm, _ := vmrepl.GetComputeFromID(netid.DeviceID)
-					osIfInfo := OSNeutronInterfaceAnnotation{
+					osIfInfo := osNeutronInterfaceAnnotation{
 						IfName: ifInfo.Target,
 						VMName: vm.Name,
 						NetworkName: net.Name }
 
-					osIfInfoJson, err := json.Marshal(osIfInfo)
+					osIfInfoJSON, err := json.Marshal(osIfInfo)
 					if err != nil {
 						log.Fatalf("err: %v", err)
 					} else {
 						log.Printf("vmname: %s / networkname:%s\n", vm.Name, net.Name)
-						InfoPool.Set(fmt.Sprintf("if/%s/%s", ifInfo.Target, "neutron_network"), string(osIfInfoJson))
+						infoPool.Set(fmt.Sprintf("if/%s/%s", ifInfo.Target, "neutron_network"), string(osIfInfoJSON))
 					}
 				}
 			}
@@ -524,27 +527,27 @@ func main() {
 		return
 	}
 
-	svc, _ := GetServiceList(token)
-	neuId, _ := svc.GetService("neutron")
+	svc, _ := getServiceList(token)
+	neuID, _ := svc.GetService("neutron")
 	//fmt.Printf("neutron id:%s\n", id.ID)
 
-	novaId, _ := svc.GetService("nova")
+	novaID, _ := svc.GetService("nova")
 	//fmt.Printf("nova id:%s\n", id.ID)
 
-	endpoints, _ := GetEndpoints(token)
-	neuEndpoint, _ := endpoints.GetEndpoint(neuId.ID, "admin")
+	endpoints, _ := getEndpoints(token)
+	neuEndpoint, _ := endpoints.GetEndpoint(neuID.ID, "admin")
 	//fmt.Printf("neutron endpoint:%s\n", neuEndpoint.URL)
 
-	novaEndpoint, _ := endpoints.GetEndpoint(novaId.ID, "admin")
+	novaEndpoint, _ := endpoints.GetEndpoint(novaID.ID, "admin")
 	//fmt.Printf("nova endpoint:%s\n", novaEndpoint.URL)
 
-	vmrepl, _ := GetComputeReply(token, novaEndpoint.URL)
+	vmrepl, _ := getComputeReply(token, novaEndpoint.URL)
 
-	prepl, _ := GetNeutronPorts(token, neuEndpoint.URL)
+	prepl, _ := getNeutronPorts(token, neuEndpoint.URL)
 	netid, _ := prepl.GetNeutronPortfromMAC("fa:16:3e:1e:04:08")
 	fmt.Printf("netid:%s\ndeviceid:%s\n", netid.NetworkID, netid.DeviceID)
 
-	nrepl, _ := GetNetworkReply(token, neuEndpoint.URL)
+	nrepl, _ := getNetworkReply(token, neuEndpoint.URL)
 	net, _ := nrepl.GetNetworkFromID(netid.NetworkID)
 	vm, _ := vmrepl.GetComputeFromID(netid.DeviceID)
 	fmt.Printf("vmname: %s / networkname:%s\n", vm.Name, net.Name)

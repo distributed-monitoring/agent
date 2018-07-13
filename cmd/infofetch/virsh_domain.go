@@ -25,7 +25,7 @@ import (
 	"log"
 )
 
-type Instance struct {
+type instance struct {
 	Name  string `xml:"name"`
 	Owner struct {
 		User    string `xml:"user"`
@@ -36,7 +36,7 @@ type Instance struct {
 	} `xml:"flavor"`
 }
 
-type Domain struct {
+type domain struct {
 	Name    string `xml:"name"`
 	Devices struct {
 		Interfaces []struct {
@@ -51,47 +51,47 @@ type Domain struct {
 	} `xml:"devices"`
 }
 
-type OSVMAnnotation struct {
+type osVMAnnotation struct {
 	Name    string
 	Owner   string
 	Project string
 	Flavor  string
 }
 
-type OSVMInterfaceAnnotation struct {
+type osVMInterfaceAnnotation struct {
 	Type    string
 	MacAddr string
 	Target  string
 	VMName  string
 }
 
-func parseNovaMetadata(metadata string) (*OSVMAnnotation, error) {
-	data := new(Instance)
+func parseNovaMetadata(metadata string) (*osVMAnnotation, error) {
+	data := new(instance)
 
 	if err := xml.Unmarshal([]byte(metadata), data); err != nil {
 		log.Println("XML Unmarshal error:", err)
 		return nil, err
 	}
 	log.Printf("name: %s user: %s, project: %s, flavor: %s", data.Name, data.Owner.User, data.Owner.Project, data.Flavor.Name)
-	return &OSVMAnnotation{
+	return &osVMAnnotation{
 		Name:    data.Name,
 		Owner:   data.Owner.User,
 		Project: data.Owner.Project,
 		Flavor:  data.Flavor.Name}, nil
 }
 
-func parseXMLForMAC(dumpxml string) (*[]OSVMInterfaceAnnotation, error) {
-	data := new(Domain)
+func parseXMLForMAC(dumpxml string) (*[]osVMInterfaceAnnotation, error) {
+	data := new(domain)
 
 	if err := xml.Unmarshal([]byte(dumpxml), data); err != nil {
 		log.Println("XML Unmarshal error:", err)
 		return nil, err
 	}
 
-	ifAnnotation := make([]OSVMInterfaceAnnotation, len(data.Devices.Interfaces))
+	ifAnnotation := make([]osVMInterfaceAnnotation, len(data.Devices.Interfaces))
 	for i, v := range data.Devices.Interfaces {
 		log.Printf("interface type: %s, mac_addr: %s, target_dev: %s", v.Type, v.Mac.Address, v.Target.Dev)
-		ifAnnotation[i] = OSVMInterfaceAnnotation{
+		ifAnnotation[i] = osVMInterfaceAnnotation{
 			Type:    v.Type,
 			MacAddr: v.Mac.Address,
 			Target:  v.Target.Dev,
@@ -100,13 +100,13 @@ func parseXMLForMAC(dumpxml string) (*[]OSVMInterfaceAnnotation, error) {
 	return &ifAnnotation, nil
 }
 
-func setInterfaceAnnotation(ifInfo *[]OSVMInterfaceAnnotation, vmIfInfoChan chan string) {
+func setInterfaceAnnotation(ifInfo *[]osVMInterfaceAnnotation, vmIfInfoChan chan string) {
 	for _, v := range *ifInfo {
-		ifInfoJson, err := json.Marshal(v)
+		ifInfoJSON, err := json.Marshal(v)
 		if err != nil {
 			log.Fatalf("err: %v", err)
 		}
-		InfoPool.Set(fmt.Sprintf("if/%s/%s", v.Target, "network"), string(ifInfoJson))
+		infoPool.Set(fmt.Sprintf("if/%s/%s", v.Target, "network"), string(ifInfoJSON))
 
 		vmIfInfoChan <- fmt.Sprintf("if/%s/%s", v.Target, "network")
 	}
@@ -132,11 +132,11 @@ func domainEventLifecycleCallback(vmIfInfo chan string) func(c *libvirt.Connect,
 			if err != nil {
 				log.Fatalf("err: %v", err)
 			}
-			vmInfoJson, err := json.Marshal(vmInfo)
+			vmInfoJSON, err := json.Marshal(vmInfo)
 			if err != nil {
 				log.Fatalf("err: %v", err)
 			}
-			InfoPool.Set(fmt.Sprintf("vm/%s/%s", domName, "vminfo"), string(vmInfoJson))
+			infoPool.Set(fmt.Sprintf("vm/%s/%s", domName, "vminfo"), string(vmInfoJSON))
 		case libvirt.DOMAIN_EVENT_STARTED:
 			// VM started: interface type, interface mac addr, intarface type
 			// Redis: <vnname>/interfaces
@@ -152,36 +152,38 @@ func domainEventLifecycleCallback(vmIfInfo chan string) func(c *libvirt.Connect,
 			}
 			setInterfaceAnnotation(ifInfo, vmIfInfo)
 
-			ifInfoJson, err := json.Marshal(ifInfo)
+			ifInfoJSON, err := json.Marshal(ifInfo)
 			if err != nil {
 				log.Fatalf("err: %v", err)
 			}
-			InfoPool.Set(fmt.Sprintf("vm/%s/%s", domName, "interfaces"), string(ifInfoJson))
+			infoPool.Set(fmt.Sprintf("vm/%s/%s", domName, "interfaces"), string(ifInfoJSON))
 		case libvirt.DOMAIN_EVENT_UNDEFINED:
 			log.Printf("undefined!: domName: %s, event: %v\n", domName, event)
-			vmIFInfo, err := InfoPool.Get(fmt.Sprintf("vm/%s/%s", domName, "interfaces"))
+			vmIFInfo, err := infoPool.Get(fmt.Sprintf("vm/%s/%s", domName, "interfaces"))
 			if err != nil {
 				log.Fatalf("err: %v", err)
 			} else {
-				var interfaces []OSVMInterfaceAnnotation
+				var interfaces []osVMInterfaceAnnotation
 				err = json.Unmarshal([]byte(vmIFInfo), &interfaces)
 				if err != nil {
 					log.Fatalf("err: %v", err)
 				} else {
 					for _, v := range interfaces {
-						InfoPool.Del(fmt.Sprintf("if/%s/%s", v.Target, "network"))
-						InfoPool.Del(fmt.Sprintf("if/%s/%s", v.Target, "neutron_network"))
+						infoPool.Del(fmt.Sprintf("if/%s/%s", v.Target, "network"))
+						infoPool.Del(fmt.Sprintf("if/%s/%s", v.Target, "neutron_network"))
 					}
 				}
 			}
-			InfoPool.Del(fmt.Sprintf("vm/%s/%s", domName, "vminfo"))
-			InfoPool.Del(fmt.Sprintf("vm/%s/%s", domName, "interfaces"))
+			infoPool.Del(fmt.Sprintf("vm/%s/%s", domName, "vminfo"))
+			infoPool.Del(fmt.Sprintf("vm/%s/%s", domName, "interfaces"))
 		default:
 			log.Printf("domName: %s, event: %v\n", domName, event)
 		}
 	}
 }
 
+// GetActiveDomain gets all active domain information from libvirt and it should be called at startup to get
+// current running domain information
 func GetActiveDomain(conn *libvirt.Connect, vmIfInfoChan chan string) error {
 	doms, err := conn.ListAllDomains(libvirt.CONNECT_LIST_DOMAINS_ACTIVE)
 	if err != nil {
@@ -203,12 +205,12 @@ func GetActiveDomain(conn *libvirt.Connect, vmIfInfoChan chan string) error {
 			log.Fatalf("err: %v", err)
 			return err
 		}
-		vmInfoJson, err := json.Marshal(vmInfo)
+		vmInfoJSON, err := json.Marshal(vmInfo)
 		if err != nil {
 			log.Fatalf("err: %v", err)
 			return err
 		}
-		InfoPool.Set(fmt.Sprintf("vm/%s/%s", name, "vminfo"), string(vmInfoJson))
+		infoPool.Set(fmt.Sprintf("vm/%s/%s", name, "vminfo"), string(vmInfoJSON))
 
 		// Get Network info
 		xml, err := d.GetXMLDesc(0)
@@ -223,20 +225,21 @@ func GetActiveDomain(conn *libvirt.Connect, vmIfInfoChan chan string) error {
 		}
 		setInterfaceAnnotation(ifInfo, vmIfInfoChan)
 
-		ifInfoJson, err := json.Marshal(ifInfo)
+		ifInfoJSON, err := json.Marshal(ifInfo)
 		if err != nil {
 			log.Fatalf("err: %v", err)
 			return err
 		}
-		InfoPool.Set(fmt.Sprintf("vm/%s/%s", name, "interfaces"), string(ifInfoJson))
+		infoPool.Set(fmt.Sprintf("vm/%s/%s", name, "interfaces"), string(ifInfoJSON))
 	}
 	return nil
 }
 
+// RunVirshEventLoop is event loop to watch libvirt update
 func RunVirshEventLoop(ctx context.Context, conn *libvirt.Connect, vmIfInfoChan chan string) error {
-	callbackId, err := conn.DomainEventLifecycleRegister(nil, domainEventLifecycleCallback(vmIfInfoChan))
+	callbackID, err := conn.DomainEventLifecycleRegister(nil, domainEventLifecycleCallback(vmIfInfoChan))
 	if err != nil {
-		log.Fatalf("err: callbackid: %d %v", callbackId, err)
+		log.Fatalf("err: callbackid: %d %v", callbackID, err)
 	}
 
 	log.Printf("Entering libvirt event loop()")
@@ -252,7 +255,7 @@ func RunVirshEventLoop(ctx context.Context, conn *libvirt.Connect, vmIfInfoChan 
 	}
 	log.Printf("Quitting libvirt event loop()")
 
-	if err := conn.DomainEventDeregister(callbackId); err != nil {
+	if err := conn.DomainEventDeregister(callbackID); err != nil {
 		log.Fatalf("%v", err)
 	}
 	return nil
