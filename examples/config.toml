@@ -1,0 +1,40 @@
+[common]
+# All daemons share redis DB for annotation etc.
+redis_host = "localhost"
+redis_port = "6379"
+redis_password = ""
+redis_db = 0
+
+
+[server]
+amqp_host = "192.0.2.3"
+amqp_user = "guest"
+amqp_password = "xxxx"
+amqp_port = "5672"
+
+collectd_confdir = "/etc/collectd/collectd.conf.d"
+
+
+[infofetch]
+os_username = "admin"
+os_user_domain_name = "Default"
+os_project_domain_name = ""
+os_project_name = "admin"
+os_password = "xxxx"
+os_auth_url = "http://192.0.2.3:5000/v3"
+
+
+[threshold]
+# redis for raw metrics data
+redis_host = "localhost"
+redis_port = "6379"
+redis_password = ""
+redis_db = 0
+
+# exceed by exec "sudo ping -i 0.00005 -c 1000 -s 1000 -q <IP>"
+interval = 5
+min = 1000000
+
+collectd_plugin = "barometer-localagent"
+collectd_type = "if-octets-threshold"
+
