@@ -24,9 +24,8 @@ import (
 	"os"
 )
 
-// confDirPath is defined in main.go
-
-func runAPIServer() {
+func runAPIServer(config *CollectdConfig) {
+	confDirPath := config.ConfDir
 	e := echo.New()
 
 	e.GET("/", func(c echo.Context) error {
