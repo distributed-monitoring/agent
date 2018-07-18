@@ -14,18 +14,15 @@ import (
 	"time"
 )
 
-const confFileAnno = "config_annotate.toml"
-const confFileEval = "config_evaluate.toml"
-
 // e.g. collectd/instance-00000001/virt/if_octets-tapd21acb51-35
 const redisKey = "collectd/*/virt/if_octets-*"
 
-func zrangebyscore(client *redis.Client, key string, pool annotate.Pool, config *ThresholdConfig, notifier notify.Notifier) {
+func zrangebyscore(client *redis.Client, key string, pool annotate.Pool, config *Config, notifier notify.Notifier) {
 
 	unixNow := int(time.Now().Unix())
 
 	val, err := client.ZRangeByScore(key, redis.ZRangeBy{
-		Min: strconv.Itoa(unixNow - config.Interval),
+		Min: strconv.Itoa(unixNow - config.Threshold.Interval),
 		Max: strconv.Itoa(unixNow),
 	}).Result()
 
@@ -48,7 +45,7 @@ func zrangebyscore(client *redis.Client, key string, pool annotate.Pool, config 
 				maxVal = intVal
 			}
 		}
-		if maxVal > config.Min {
+		if maxVal > config.Threshold.Min {
 
 			fmt.Println("kick action")
 
@@ -61,7 +58,7 @@ func zrangebyscore(client *redis.Client, key string, pool annotate.Pool, config 
 			message.WriteString("Value ")
 			message.WriteString(strconv.Itoa(maxVal))
 			message.WriteString(" exceeded threshold ")
-			message.WriteString(strconv.Itoa(config.Min))
+			message.WriteString(strconv.Itoa(config.Threshold.Min))
 			message.WriteString(".")
 
 			nameVal, _ := pool.Get(fmt.Sprintf("%s/%s/vminfo", "vm", virtName))
@@ -86,7 +83,7 @@ func action(val int) {
 }
 */
 
-func checkVirtIF(client *redis.Client, pool annotate.Pool, config *ThresholdConfig, notifier notify.Notifier) {
+func checkVirtIF(client *redis.Client, pool annotate.Pool, config *Config, notifier notify.Notifier) {
 	keys, err := client.Keys(redisKey).Result()
 	if err != nil {
 		panic(err)
@@ -98,80 +95,72 @@ func checkVirtIF(client *redis.Client, pool annotate.Pool, config *ThresholdConf
 
 // Config is ...
 type Config struct {
-	Annotate AnnotateConfig
-	Evaluate EvaluateConfig
-}
-
-// AnnotateConfig is ...
-type AnnotateConfig struct {
-	Redis RedisConfig
-}
-
-// EvaluateConfig is ...
-type EvaluateConfig struct {
-	Redis     RedisConfig
+	Common    CommonConfig
 	Threshold ThresholdConfig
-	Collectd  CollectdConfig
 }
 
-// RedisConfig is ...
-type RedisConfig struct {
-	Ipaddress string
-	Port      string
-	Password  string
-	DB        int
+// CommonConfig is ...
+type CommonConfig struct {
+	RedisHost     string `toml:"redis_host"`
+	RedisPort     string `toml:"redis_port"`
+	RedisPassword string `toml:"redis_password"`
+	RedisDB       int    `toml:"redis_db"`
 }
 
 // ThresholdConfig is ...
 type ThresholdConfig struct {
-	Interval int
-	Min      int
-}
+	RedisHost     string `toml:"redis_host"`
+	RedisPort     string `toml:"redis_port"`
+	RedisPassword string `toml:"redis_password"`
+	RedisDB       int    `toml:"redis_db"`
 
-// CollectdConfig is ...
-type CollectdConfig struct {
-	Plugin string
-	Type   string
+	Interval int `toml:"interval"`
+	Min      int `toml:"min"`
+
+	CollectdPlugin string `toml:"collectd_plugin"`
+	CollectdType   string `toml:"collectd_type"`
 }
 
 func main() {
 	var config Config
-	_, err := toml.DecodeFile(confFileAnno, &config.Annotate)
+	_, err := toml.DecodeFile("/etc/barometer-localagent/config.toml", &config)
 	if err != nil {
-		log.Fatalf("read error of annotate config: %s", err)
-	}
-	_, err2 := toml.DecodeFile(confFileEval, &config.Evaluate)
-	if err2 != nil {
-		log.Fatalf("read error of evaluate config: %s", err2)
+		log.Fatalf("read error of config: %s", err)
 	}
 
-	redisConfig := config.Annotate.Redis
-	log.Printf("annotate redis config : %s:%s XXXXX %d", redisConfig.Ipaddress, redisConfig.Port, redisConfig.DB)
+	annoConfig := config.Common
+	log.Printf("annotate redis config Addr:%s:%s DB:%d", annoConfig.RedisHost, annoConfig.RedisPort, annoConfig.RedisDB)
+	if annoConfig.RedisPassword == "" {
+		log.Printf("annotate redis password is not set")
+	}
 	client := redis.NewClient(&redis.Options{
-		Addr:     redisConfig.Ipaddress + ":" + redisConfig.Port,
-		Password: redisConfig.Password,
-		DB:       redisConfig.DB,
+		Addr:     annoConfig.RedisHost + ":" + annoConfig.RedisPort,
+		Password: annoConfig.RedisPassword,
+		DB:       annoConfig.RedisDB,
 	})
 	infoPool := annotate.RedisPool{Client: client}
 
-	redisConfig = config.Evaluate.Redis
-	log.Printf("evaluate redis config : %s:%s XXXXX %d", redisConfig.Ipaddress, redisConfig.Port, redisConfig.DB)
+	thresConfig := config.Threshold
+
+	log.Printf("raw data redis config Addr:%s:%s DB:%d", thresConfig.RedisHost, thresConfig.RedisPort, thresConfig.RedisDB)
+	if thresConfig.RedisPassword == "" {
+		log.Printf("raw data redis password is not set")
+	}
 	rawStore := redis.NewClient(&redis.Options{
-		Addr:     redisConfig.Ipaddress + ":" + redisConfig.Port,
-		Password: redisConfig.Password,
-		DB:       redisConfig.DB,
+		Addr:     thresConfig.RedisHost + ":" + thresConfig.RedisPort,
+		Password: thresConfig.RedisPassword,
+		DB:       thresConfig.RedisDB,
 	})
 
-	collectdConfig := config.Evaluate.Collectd
 	notifier := notify.CollectdNotifier{
-		PluginName: collectdConfig.Plugin,
-		TypeName:   collectdConfig.Type}
+		PluginName: thresConfig.CollectdPlugin,
+		TypeName:   thresConfig.CollectdType}
 
 	//how to stop after compile...
-	ticker := time.NewTicker(time.Duration(config.Evaluate.Threshold.Interval) * time.Second)
+	ticker := time.NewTicker(time.Duration(thresConfig.Interval) * time.Second)
 
 	for range ticker.C {
-		checkVirtIF(rawStore, infoPool, &config.Evaluate.Threshold, notifier)
+		checkVirtIF(rawStore, infoPool, &config, notifier)
 	}
 
 	fmt.Println("end")
