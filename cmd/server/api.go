@@ -26,8 +26,8 @@ import (
 	"time"
 )
 
-func runAPIServer(ctx context.Context, config *CollectdConfig) {
-	confDirPath := config.ConfDir
+func runAPIServer(ctx context.Context, config *Config) {
+	confDirPath := config.Server.CollectdConfDir
 	e := echo.New()
 
 	e.GET("/", func(c echo.Context) error {
@@ -46,7 +46,7 @@ func runAPIServer(ctx context.Context, config *CollectdConfig) {
 		}
 		defer src.Close()
 
-		dst, err := os.Create(confDirPath + file.Filename)
+		dst, err := os.Create(confDirPath + "/" + file.Filename)
 		if err != nil {
 			return c.String(http.StatusInternalServerError, "file create NG")
 		}

@@ -31,9 +31,8 @@ func failOnError(err error, msg string) {
 }
 
 func runSubscriber(ctx context.Context, config *Config) {
-	confDirPath := config.Collectd.ConfDir
-	amqpConf := config.Amqp
-	amqpURL := "amqp://" + amqpConf.User + ":" + amqpConf.Password + "@" + amqpConf.Host + ":" + amqpConf.Port + "/"
+	confDirPath := config.Server.CollectdConfDir
+	amqpURL := "amqp://" + config.Server.AmqpUser + ":" + config.Server.AmqpPassword + "@" + config.Server.AmqpHost + ":" + config.Server.AmqpPort + "/"
 	conn, err := amqp.Dial(amqpURL)
 	failOnError(err, "failed to connect to RabbitMQ")
 
@@ -92,7 +91,7 @@ EVENTLOOP:
 			if ok {
 				dataText := strings.SplitN(string(d.Body), "/", 2)
 
-				dst, err := os.Create(confDirPath + dataText[0])
+				dst, err := os.Create(confDirPath + "/" + dataText[0])
 				failOnError(err, "File create NG")
 				defer dst.Close()
 

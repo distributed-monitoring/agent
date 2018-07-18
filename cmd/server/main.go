@@ -21,6 +21,7 @@ import (
 	"flag"
 	"github.com/BurntSushi/toml"
 	"log"
+	"os"
 	"sync"
 )
 
@@ -28,29 +29,29 @@ var serverTypeOpt = flag.String("type", "both", "server type: both(default), pub
 
 // Config is ...
 type Config struct {
-	Amqp     AmqpConfig
-	Collectd CollectdConfig
+	Server ServerConfig
 }
 
-// AmqpConfig is ...
-type AmqpConfig struct {
-	Host     string
-	User     string
-	Password string
-	Port     string
-}
+// ServerConfig is ...
+type ServerConfig struct {
+	AmqpHost     string `toml:"amqp_host"`
+	AmqpUser     string `toml:"amqp_user"`
+	AmqpPassword string `toml:"amqp_password"`
+	AmqpPort     string `toml:"amqp_port"`
 
-// CollectdConfig is ...
-type CollectdConfig struct {
-	ConfDir string
+	CollectdConfDir string `toml:"collectd_confdir"`
 }
 
 func main() {
 
 	var config Config
-	_, err := toml.DecodeFile("../../config/config.toml", &config)
+	_, err := toml.DecodeFile("/etc/barometer-localagent/config.toml", &config)
 	if err != nil {
-		log.Println("read error of config file")
+		log.Fatalf("read error of config file")
+	}
+
+	if f, err := os.Stat(config.Server.CollectdConfDir); os.IsNotExist(err) || !f.IsDir() {
+		log.Fatalf("path \"%s\" is not a directory", config.Server.CollectdConfDir)
 	}
 
 	var waitgroup sync.WaitGroup
@@ -72,7 +73,7 @@ func main() {
 		waitgroup.Add(1)
 		go func() {
 			defer waitgroup.Done()
-			runAPIServer(ctx, &config.Collectd)
+			runAPIServer(ctx, &config)
 		}()
 		log.Printf("Waiting for REST.")
 	}
