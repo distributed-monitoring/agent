@@ -57,7 +57,7 @@ func main() {
 	var config Config
 	_, err := toml.DecodeFile("/etc/barometer-localagent/config.toml", &config)
 	if err != nil {
-		log.Println("read error of config file")
+		log.Println("Read error of config file")
 	}
 
 	var waitgroup sync.WaitGroup

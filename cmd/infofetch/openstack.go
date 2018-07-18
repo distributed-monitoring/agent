@@ -457,7 +457,7 @@ func RunNeutronInfoFetch(ctx context.Context, config *Config, vmIfInfo chan stri
 	token, err := getToken()
 
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "cannot get token: %v\n", err)
+		fmt.Fprintf(os.Stderr, "cannot get token: %v", err)
 		return err
 	}
 
@@ -486,15 +486,15 @@ EVENTLOOP:
 		case <-ctx.Done():
 			break EVENTLOOP
 		case key := <-vmIfInfo:
-			log.Printf("incoming IF: %v", key)
+			log.Printf("Incoming IF: %v", key)
 			libvirtIfInfo, err := infoPool.Get(key)
 			if err != nil {
-				log.Fatalf("err: %v", err)
+				log.Fatalf("Err: %v", err)
 			} else {
 				var ifInfo osVMInterfaceAnnotation
 				err = json.Unmarshal([]byte(libvirtIfInfo), &ifInfo)
 				if err != nil {
-					log.Fatalf("err: %v", err)
+					log.Fatalf("Err: %v", err)
 				} else {
 					vmrepl, _ := getComputeReply(token, novaEndpoint.URL)
 					prepl, _ := getNeutronPorts(token, neuEndpoint.URL)
@@ -509,9 +509,9 @@ EVENTLOOP:
 
 					osIfInfoJSON, err := json.Marshal(osIfInfo)
 					if err != nil {
-						log.Fatalf("err: %v", err)
+						log.Fatalf("Err: %v", err)
 					} else {
-						log.Printf("vmname: %s / networkname:%s\n", vm.Name, net.Name)
+						log.Printf("Get: vmname: %s / networkname:%s", vm.Name, net.Name)
 						infoPool.Set(fmt.Sprintf("if/%s/%s", ifInfo.Target, "neutron_network"), string(osIfInfoJSON))
 					}
 				}
@@ -520,40 +520,3 @@ EVENTLOOP:
 	}
 	return nil
 }
-
-/*
-func main() {
-	token, err := GetToken()
-
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "cannot get token: %v\n", err)
-		return
-	}
-
-	svc, _ := getServiceList(token)
-	neuID, _ := svc.GetService("neutron")
-	//fmt.Printf("neutron id:%s\n", id.ID)
-
-	novaID, _ := svc.GetService("nova")
-	//fmt.Printf("nova id:%s\n", id.ID)
-
-	endpoints, _ := getEndpoints(token)
-	neuEndpoint, _ := endpoints.GetEndpoint(neuID.ID, "admin")
-	//fmt.Printf("neutron endpoint:%s\n", neuEndpoint.URL)
-
-	novaEndpoint, _ := endpoints.GetEndpoint(novaID.ID, "admin")
-	//fmt.Printf("nova endpoint:%s\n", novaEndpoint.URL)
-
-	vmrepl, _ := getComputeReply(token, novaEndpoint.URL)
-
-	prepl, _ := getNeutronPorts(token, neuEndpoint.URL)
-	netid, _ := prepl.GetNeutronPortfromMAC("fa:16:3e:1e:04:08")
-	fmt.Printf("netid:%s\ndeviceid:%s\n", netid.NetworkID, netid.DeviceID)
-
-	nrepl, _ := getNetworkReply(token, neuEndpoint.URL)
-	net, _ := nrepl.GetNetworkFromID(netid.NetworkID)
-	vm, _ := vmrepl.GetComputeFromID(netid.DeviceID)
-	fmt.Printf("vmname: %s / networkname:%s\n", vm.Name, net.Name)
-
-}
-*/

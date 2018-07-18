@@ -34,12 +34,12 @@ func runSubscriber(ctx context.Context, config *Config) {
 	confDirPath := config.Server.CollectdConfDir
 	amqpURL := "amqp://" + config.Server.AmqpUser + ":" + config.Server.AmqpPassword + "@" + config.Server.AmqpHost + ":" + config.Server.AmqpPort + "/"
 	conn, err := amqp.Dial(amqpURL)
-	failOnError(err, "failed to connect to RabbitMQ")
+	failOnError(err, "Failed to connect to RabbitMQ")
 
 	defer conn.Close()
 
 	ch, err := conn.Channel()
-	failOnError(err, "failed to open a channel")
+	failOnError(err, "Failed to open a channel")
 	defer ch.Close()
 
 	err = ch.ExchangeDeclare(
@@ -51,7 +51,7 @@ func runSubscriber(ctx context.Context, config *Config) {
 		false,           // no-wait
 		nil,             // arguments
 	)
-	failOnError(err, "failed to declare an exchange")
+	failOnError(err, "Failed to declare an exchange")
 
 	q, err := ch.QueueDeclare(
 		"",    // name
@@ -61,7 +61,7 @@ func runSubscriber(ctx context.Context, config *Config) {
 		false, // no-wait
 		nil,   // arguments
 	)
-	failOnError(err, "failed to declare a queue")
+	failOnError(err, "Failed to declare a queue")
 
 	err = ch.QueueBind(
 		q.Name,          // queue name
@@ -69,7 +69,7 @@ func runSubscriber(ctx context.Context, config *Config) {
 		"collectd-conf", // exchange
 		false,
 		nil)
-	failOnError(err, "failed to bind a queue")
+	failOnError(err, "Failed to bind a queue")
 
 	msgs, err := ch.Consume(
 		q.Name, // queue
@@ -80,7 +80,7 @@ func runSubscriber(ctx context.Context, config *Config) {
 		false,  // no-wait
 		nil,    // args
 	)
-	failOnError(err, "failed to register a consumer")
+	failOnError(err, "Failed to register a consumer")
 
 EVENTLOOP:
 	for {

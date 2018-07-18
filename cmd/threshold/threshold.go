@@ -125,13 +125,13 @@ func main() {
 	var config Config
 	_, err := toml.DecodeFile("/etc/barometer-localagent/config.toml", &config)
 	if err != nil {
-		log.Fatalf("read error of config: %s", err)
+		log.Fatalf("Read error of config: %s", err)
 	}
 
 	annoConfig := config.Common
-	log.Printf("annotate redis config Addr:%s:%s DB:%d", annoConfig.RedisHost, annoConfig.RedisPort, annoConfig.RedisDB)
+	log.Printf("Annotate redis config Addr:%s:%s DB:%d", annoConfig.RedisHost, annoConfig.RedisPort, annoConfig.RedisDB)
 	if annoConfig.RedisPassword == "" {
-		log.Printf("annotate redis password is not set")
+		log.Printf("Annotate redis password is not set")
 	}
 	client := redis.NewClient(&redis.Options{
 		Addr:     annoConfig.RedisHost + ":" + annoConfig.RedisPort,
@@ -142,9 +142,9 @@ func main() {
 
 	thresConfig := config.Threshold
 
-	log.Printf("raw data redis config Addr:%s:%s DB:%d", thresConfig.RedisHost, thresConfig.RedisPort, thresConfig.RedisDB)
+	log.Printf("Raw data redis config Addr:%s:%s DB:%d", thresConfig.RedisHost, thresConfig.RedisPort, thresConfig.RedisDB)
 	if thresConfig.RedisPassword == "" {
-		log.Printf("raw data redis password is not set")
+		log.Printf("Raw data redis password is not set")
 	}
 	rawStore := redis.NewClient(&redis.Options{
 		Addr:     thresConfig.RedisHost + ":" + thresConfig.RedisPort,
@@ -163,5 +163,5 @@ func main() {
 		checkVirtIF(rawStore, infoPool, &config, notifier)
 	}
 
-	fmt.Println("end")
+	fmt.Println("End")
 }
