@@ -478,10 +478,11 @@ func RunNeutronInfoFetch(ctx context.Context, vmIfInfo chan string) error {
 	//vmrepl, _ := getComputeReply(token, novaEndpoint.URL)
 	//prepl, _ := getNeutronPorts(token, neuEndpoint.URL)
 
+	EVENTLOOP:
 	for {
 		select {
 		case <-ctx.Done():
-			break
+			break EVENTLOOP
 		case key := <-vmIfInfo:
 			log.Printf("incoming IF: %v", key)
 			libvirtIfInfo, err := infoPool.Get(key)

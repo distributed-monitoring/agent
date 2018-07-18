@@ -242,11 +242,13 @@ func RunVirshEventLoop(ctx context.Context, conn *libvirt.Connect, vmIfInfoChan 
 		log.Fatalf("err: callbackid: %d %v", callbackID, err)
 	}
 
+	libvirt.EventAddTimeout(5000, func(timer int) { return }) // 5000 = 5sec
 	log.Printf("Entering libvirt event loop()")
+EVENTLOOP:
 	for {
 		select {
 		case <-ctx.Done():
-			break
+			break EVENTLOOP
 		default:
 			if err := libvirt.EventRunDefaultImpl(); err != nil {
 				log.Fatalf("%v", err)
