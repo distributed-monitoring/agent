@@ -129,13 +129,13 @@ func getToken () (*token, error) {
 	body := bytes.NewReader(buf.Bytes())
 	req, err := http.NewRequest("POST", os.ExpandEnv("$OS_AUTH_URL/auth/tokens?nocatalog"), body)
 	if err != nil {
-		return &token{"", time.Unix(0, 0)}, fmt.Errorf("Http request failed: %v", err)
+		return &token{"", time.Unix(0, 0)}, fmt.Errorf("http request failed: %v", err)
 	}
 	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return &token{"", time.Unix(0, 0)}, fmt.Errorf("Http POST failed: %v", err)
+		return &token{"", time.Unix(0, 0)}, fmt.Errorf("http POST failed: %v", err)
 	}
 	defer resp.Body.Close()
 	b, err := ioutil.ReadAll(resp.Body)
@@ -173,7 +173,7 @@ func (s *serviceListReply) GetService (name string) (*service, error) {
 			return &v, nil
 		}
 	}
-	return nil, fmt.Errorf("No service id (%s) found", name)
+	return nil, fmt.Errorf("no service id (%s) found", name)
 }
 
 type endPoint struct {
@@ -206,7 +206,7 @@ func getEndpoints (token *token) (endPointReply, error) {
 	token.CheckToken()
 	req, err := http.NewRequest("GET", os.ExpandEnv("$OS_AUTH_URL/endpoints"), nil)
 	if err != nil {
-		return endPointReply{}, fmt.Errorf("Request failed:%v", err)
+		return endPointReply{}, fmt.Errorf("request failed:%v", err)
 	}
 	req.Header.Set("X-Auth-Token", token.Token)
 
@@ -232,7 +232,7 @@ func getServiceList (token *token) (serviceListReply, error) {
 	token.CheckToken()
 	req, err := http.NewRequest("GET", os.ExpandEnv("$OS_AUTH_URL/services"), nil)
 	if err != nil {
-		return serviceListReply{}, fmt.Errorf("Request failed:%v", err)
+		return serviceListReply{}, fmt.Errorf("request failed:%v", err)
 	}
 	req.Header.Set("X-Auth-Token", token.Token)
 
@@ -296,7 +296,7 @@ func getNeutronPorts (token *token, endpoint string) (neutronPortReply, error) {
 	token.CheckToken()
 	req, err := http.NewRequest("GET", endpoint+"/v2.0/ports", nil)
 	if err != nil {
-		return neutronPortReply{}, fmt.Errorf("Request failed:%v", err)
+		return neutronPortReply{}, fmt.Errorf("request failed:%v", err)
 	}
 	req.Header.Set("X-Auth-Token", token.Token)
 
@@ -323,7 +323,7 @@ func (n *neutronPortReply) GetNeutronPortfromMAC (mac string) (*neutronPort,
 			return &v, nil
 		}
 	}
-	return nil, fmt.Errorf("No port (%s) found", mac)
+	return nil, fmt.Errorf("no port (%s) found", mac)
 }
 
 type neutronNetwork struct {
@@ -364,14 +364,14 @@ func (n *neutronNetworkReply) GetNetworkFromID (netid string) (*neutronNetwork, 
 			return &v, nil
 		}
 	}
-	return nil, fmt.Errorf("No network (%s) found", netid)
+	return nil, fmt.Errorf("no network (%s) found", netid)
 }
 
 func getNetworkReply (token *token, endpoint string) (neutronNetworkReply, error) {
 	token.CheckToken()
 	req, err := http.NewRequest("GET", endpoint+"/v2.0/networks", nil)
 	if err != nil {
-		return neutronNetworkReply{}, fmt.Errorf("Request failed:%v", err)
+		return neutronNetworkReply{}, fmt.Errorf("request failed:%v", err)
 	}
 	req.Header.Set("X-Auth-Token", token.Token)
 
@@ -410,7 +410,7 @@ func (n *novaComputeReply) GetComputeFromID (vmid string) (*novaCompute, error) 
 			return &v, nil
 		}
 	}
-	return nil, fmt.Errorf("No vm (%s) found", vmid)
+	return nil, fmt.Errorf("no vm (%s) found", vmid)
 }
 
 func getComputeReply (token *token, endpoint string) (novaComputeReply, error) {
@@ -420,7 +420,7 @@ func getComputeReply (token *token, endpoint string) (novaComputeReply, error) {
 
 	req, err := http.NewRequest("GET", endpoint+"/servers", nil)
 	if err != nil {
-		return novaComputeReply{}, fmt.Errorf("Request failed:%v", err)
+		return novaComputeReply{}, fmt.Errorf("request failed:%v", err)
 	}
 	req.Header.Set("X-Auth-Token", token.Token)
 	req.URL.RawQuery = values.Encode()
