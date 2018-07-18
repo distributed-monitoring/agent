@@ -30,21 +30,32 @@ var infoPool annotate.RedisPool
 
 // Config is ...
 type Config struct {
-	Redis RedisConfig
+	Common    CommonConfig
+	InfoFetch InfoFetchConfig
 }
 
-// RedisConfig is ...
-type RedisConfig struct {
-	Host     string
-	Port     string
-	Password string
-	DB       int
+// CommonConfig is ...
+type CommonConfig struct {
+	RedisHost     string `toml:"redis_host"`
+	RedisPort     string `toml:"redis_port"`
+	RedisPassword string `toml:"redis_password"`
+	RedisDB       int    `toml:"redis_db"`
+}
+
+// InfoFetchConfig is ...
+type InfoFetchConfig struct {
+	OSUsername          string `toml:"os_username"`
+	OSUserDomainName    string `toml:"os_user_domain_name"`
+	OSProjectDomainName string `toml:"os_project_domain_name"`
+	OSProjectName       string `toml:"os_project_name"`
+	OSPassword          string `toml:"os_password"`
+	OSAuthURL           string `toml:"os_auth_url"`
 }
 
 func main() {
 
 	var config Config
-	_, err := toml.DecodeFile("../../config/config.toml", &config)
+	_, err := toml.DecodeFile("/etc/barometer-localagent/config.toml", &config)
 	if err != nil {
 		log.Println("read error of config file")
 	}
@@ -53,9 +64,9 @@ func main() {
 	libvirt.EventRegisterDefaultImpl()
 
 	redisClient := redis.NewClient(&redis.Options{
-		Addr:     config.Redis.Host + ":" + config.Redis.Port,
-		Password: config.Redis.Password,
-		DB:       config.Redis.DB,
+		Addr:     config.Common.RedisHost + ":" + config.Common.RedisPort,
+		Password: config.Common.RedisPassword,
+		DB:       config.Common.RedisDB,
 	})
 	infoPool = annotate.RedisPool{Client: redisClient}
 	// Initialize redis db...
@@ -72,7 +83,7 @@ func main() {
 		ctx := context.Background()
 		waitgroup.Add(1)
 		go func() {
-			RunNeutronInfoFetch(ctx, vmIfInfoChan)
+			RunNeutronInfoFetch(ctx, &config, vmIfInfoChan)
 			waitgroup.Done()
 		}()
 	}
