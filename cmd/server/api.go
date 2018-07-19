@@ -17,14 +17,16 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"github.com/labstack/echo"
 	"io"
 	"net/http"
 	"os"
+	"time"
 )
 
-func runAPIServer(config *CollectdConfig) {
+func runAPIServer(ctx context.Context, config *CollectdConfig) {
 	confDirPath := config.ConfDir
 	e := echo.New()
 
@@ -63,5 +65,20 @@ func runAPIServer(config *CollectdConfig) {
 		return c.String(http.StatusCreated, "collectd conf OK")
 	})
 
-	e.Logger.Fatal(e.Start(":12345"))
+	// Start server
+	go func() {
+		if err := e.Start(":12345"); err != nil {
+			e.Logger.Info("shutting down the server")
+		}
+	}()
+
+	// Wait for context.Done() to gracefully shutdown the server with
+	// a timeout of 10 seconds.
+	<-ctx.Done()
+	ctxShutdown, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	if err := e.Shutdown(ctxShutdown); err != nil {
+		e.Logger.Fatal(err)
+	}
+
 }
