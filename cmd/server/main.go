@@ -24,7 +24,7 @@ import (
 	"sync"
 )
 
-var serverTypeOpt = flag.String("type", "pubsub", "server type: pubsub, api")
+var serverTypeOpt = flag.String("type", "both", "server type: both(default), pubsub, rest")
 
 // Config is ...
 type Config struct {
@@ -57,8 +57,7 @@ func main() {
 
 	flag.Parse()
 
-	switch *serverTypeOpt {
-	case "pubsub":
+	if *serverTypeOpt == "both" || *serverTypeOpt == "pubsub" {
 		ctx := context.Background()
 		waitgroup.Add(1)
 		go func() {
@@ -66,7 +65,9 @@ func main() {
 			runSubscriber(ctx, &config)
 		}()
 		log.Printf("Waiting for publish.")
-	case "api":
+	}
+
+	if *serverTypeOpt == "both" || *serverTypeOpt == "rest" {
 		ctx := context.Background()
 		waitgroup.Add(1)
 		go func() {
@@ -74,9 +75,8 @@ func main() {
 			runAPIServer(ctx, &config.Collectd)
 		}()
 		log.Printf("Waiting for REST.")
-	default:
-		log.Fatalln("server type is wrong, see help.")
 	}
 
 	waitgroup.Wait()
+	log.Printf("Server stop.")
 }
