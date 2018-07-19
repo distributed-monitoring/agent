@@ -34,12 +34,12 @@ func runSubscriber(config *Config) {
 	amqpConf := config.Amqp
 	amqpURL := "amqp://" + amqpConf.User + ":" + amqpConf.Password + "@" + amqpConf.Host + ":" + amqpConf.Port + "/"
 	conn, err := amqp.Dial(amqpURL)
-	failOnError(err, "Failed to connect to RabbitMQ")
+	failOnError(err, "failed to connect to RabbitMQ")
 
 	defer conn.Close()
 
 	ch, err := conn.Channel()
-	failOnError(err, "Failed to open a channel")
+	failOnError(err, "failed to open a channel")
 	defer ch.Close()
 
 	err = ch.ExchangeDeclare(
@@ -51,7 +51,7 @@ func runSubscriber(config *Config) {
 		false,           // no-wait
 		nil,             // arguments
 	)
-	failOnError(err, "Failed to declare an exchange")
+	failOnError(err, "failed to declare an exchange")
 
 	q, err := ch.QueueDeclare(
 		"",    // name
@@ -61,7 +61,7 @@ func runSubscriber(config *Config) {
 		false, // no-wait
 		nil,   // arguments
 	)
-	failOnError(err, "Failed to declare a queue")
+	failOnError(err, "failed to declare a queue")
 
 	err = ch.QueueBind(
 		q.Name,          // queue name
@@ -69,7 +69,7 @@ func runSubscriber(config *Config) {
 		"collectd-conf", // exchange
 		false,
 		nil)
-	failOnError(err, "Failed to bind a queue")
+	failOnError(err, "failed to bind a queue")
 
 	msgs, err := ch.Consume(
 		q.Name, // queue
@@ -80,7 +80,7 @@ func runSubscriber(config *Config) {
 		false,  // no-wait
 		nil,    // args
 	)
-	failOnError(err, "Failed to register a consumer")
+	failOnError(err, "failed to register a consumer")
 
 	forever := make(chan bool)
 
