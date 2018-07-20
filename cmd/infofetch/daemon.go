@@ -19,14 +19,14 @@ package main
 import (
 	"context"
 	"github.com/BurntSushi/toml"
-	"github.com/distributed-monitoring/agent/pkg/annotate"
+	"github.com/distributed-monitoring/agent/pkg/common"
 	"github.com/go-redis/redis"
 	libvirt "github.com/libvirt/libvirt-go"
 	"log"
 	"sync"
 )
 
-var infoPool annotate.RedisPool
+var infoPool common.RedisPool
 
 // Config is ...
 type Config struct {
@@ -68,7 +68,7 @@ func main() {
 		Password: config.Common.RedisPassword,
 		DB:       config.Common.RedisDB,
 	})
-	infoPool = annotate.RedisPool{Client: redisClient}
+	infoPool = common.RedisPool{Client: redisClient}
 	// Initialize redis db...
 	infoPool.DelAll()
 

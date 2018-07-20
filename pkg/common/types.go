@@ -14,7 +14,10 @@
  *   limitations under the License.
  */
 
-package annotate
+package common
+
+// redisLabel is prefix of local-agent for redis
+const redisLabel = "barometer-localagent"
 
 // Pool is an interface of DB pool to annotate.
 // e.g. Set("virt_name/instance-00000001", "{"OS-name": "testvm1"}")

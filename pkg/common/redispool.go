@@ -14,14 +14,12 @@
  *   limitations under the License.
  */
 
-package annotate
+package common
 
 import (
 	"github.com/go-redis/redis"
 	"log"
 )
-
-const redisLabel = "barometer-localagent"
 
 // RedisPool is an implementation of Pool by redis.
 type RedisPool struct {
