@@ -47,11 +47,11 @@ func main() {
 	var config Config
 	_, err := toml.DecodeFile("/etc/barometer-localagent/config.toml", &config)
 	if err != nil {
-		log.Fatalf("read error of config file")
+		log.Fatalf("Read error of config file")
 	}
 
 	if f, err := os.Stat(config.Server.CollectdConfDir); os.IsNotExist(err) || !f.IsDir() {
-		log.Fatalf("path \"%s\" is not a directory", config.Server.CollectdConfDir)
+		log.Fatalf("Path \"%s\" is not a directory", config.Server.CollectdConfDir)
 	}
 
 	var waitgroup sync.WaitGroup
