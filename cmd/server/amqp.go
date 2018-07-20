@@ -93,7 +93,7 @@ EVENTLOOP:
 				dataText := strings.SplitN(string(d.Body), "/", 2)
 
 				dst, err := os.Create(confDirPath + dataText[0])
-				failOnError(err, "file create NG")
+				failOnError(err, "File create NG")
 				defer dst.Close()
 
 				dst.Write(([]byte)(dataText[1]))
