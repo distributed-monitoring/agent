@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"github.com/BurntSushi/toml"
 	"github.com/distributed-monitoring/agent/pkg/annotate"
@@ -11,6 +12,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -156,12 +158,24 @@ func main() {
 		PluginName: thresConfig.CollectdPlugin,
 		TypeName:   thresConfig.CollectdType}
 
-	//how to stop after compile...
-	ticker := time.NewTicker(time.Duration(thresConfig.Interval) * time.Second)
+	var waitgroup sync.WaitGroup
+	ctx := context.Background()
 
-	for range ticker.C {
-		checkVirtIF(rawStore, infoPool, &config, notifier)
-	}
+	waitgroup.Add(1)
+	go func() {
+		defer waitgroup.Done()
+		ticker := time.NewTicker(time.Duration(config.Threshold.Interval) * time.Second)
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker.C:
+				checkVirtIF(rawStore, infoPool, &config, notifier)
+			}
+		}
+	}()
+
+	waitgroup.Wait()
 
 	fmt.Println("End")
 }
