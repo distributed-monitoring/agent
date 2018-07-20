@@ -17,6 +17,7 @@
 package main
 
 import (
+	"context"
 	"github.com/streadway/amqp"
 	"log"
 	"os"
@@ -29,7 +30,7 @@ func failOnError(err error, msg string) {
 	}
 }
 
-func runSubscriber(config *Config) {
+func runSubscriber(ctx context.Context, config *Config) {
 	confDirPath := config.Collectd.ConfDir
 	amqpConf := config.Amqp
 	amqpURL := "amqp://" + amqpConf.User + ":" + amqpConf.Password + "@" + amqpConf.Host + ":" + amqpConf.Port + "/"
@@ -82,26 +83,27 @@ func runSubscriber(config *Config) {
 	)
 	failOnError(err, "failed to register a consumer")
 
-	forever := make(chan bool)
+EVENTLOOP:
+	for {
+		select {
+		case <-ctx.Done():
+			break EVENTLOOP
+		case d, ok := <-msgs:
+			if ok {
+				dataText := strings.SplitN(string(d.Body), "/", 2)
 
-	go func() {
-		for d := range msgs {
-			dataText := strings.SplitN(string(d.Body), "/", 2)
+				dst, err := os.Create(confDirPath + dataText[0])
+				failOnError(err, "File create NG")
+				defer dst.Close()
 
-			dst, err := os.Create(confDirPath + dataText[0])
-			failOnError(err, "file create NG")
-			defer dst.Close()
+				dst.Write(([]byte)(dataText[1]))
 
-			dst.Write(([]byte)(dataText[1]))
+				err = createCollectdConf()
+				failOnError(err, "collectd conf NG")
 
-			err = createCollectdConf()
-			failOnError(err, "collectd conf NG")
-
-			log.Printf(" [x] %s", d.Body)
-
+				log.Printf(" [x] %s", d.Body)
+			}
 		}
-	}()
+	}
 
-	log.Printf(" [*] Waiting for logs. To exit press CTRL+C")
-	<-forever
 }

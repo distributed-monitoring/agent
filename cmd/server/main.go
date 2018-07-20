@@ -17,12 +17,14 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"github.com/BurntSushi/toml"
 	"log"
+	"sync"
 )
 
-var serverTypeOpt = flag.String("type", "pubsub", "server type: pubsub, api")
+var serverTypeOpt = flag.String("type", "both", "server type: both(default), pubsub, rest")
 
 // Config is ...
 type Config struct {
@@ -51,14 +53,30 @@ func main() {
 		log.Println("read error of config file")
 	}
 
+	var waitgroup sync.WaitGroup
+
 	flag.Parse()
 
-	switch *serverTypeOpt {
-	case "pubsub":
-		runSubscriber(&config)
-	case "api":
-		runAPIServer(&config.Collectd)
-	default:
-		log.Fatalln("server type is wrong, see help.")
+	if *serverTypeOpt == "both" || *serverTypeOpt == "pubsub" {
+		ctx := context.Background()
+		waitgroup.Add(1)
+		go func() {
+			defer waitgroup.Done()
+			runSubscriber(ctx, &config)
+		}()
+		log.Printf("Waiting for publish.")
 	}
+
+	if *serverTypeOpt == "both" || *serverTypeOpt == "rest" {
+		ctx := context.Background()
+		waitgroup.Add(1)
+		go func() {
+			defer waitgroup.Done()
+			runAPIServer(ctx, &config.Collectd)
+		}()
+		log.Printf("Waiting for REST.")
+	}
+
+	waitgroup.Wait()
+	log.Printf("Server stop.")
 }
