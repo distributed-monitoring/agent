@@ -20,11 +20,35 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/distributed-monitoring/agent/pkg/annotate"
-	"github.com/distributed-monitoring/agent/pkg/notify"
 	"github.com/go-redis/redis"
 	"strconv"
 	"strings"
+	"time"
 )
+
+type collectdNotifier struct {
+	pluginName string
+	typeName   string
+}
+
+func send(cn collectdNotifier, message string, severity string, metaData [][2]string) error {
+	unixNow := float64(time.Now().UnixNano()) / 1000000000
+
+	var metaDataStr bytes.Buffer
+	for _, data := range metaData {
+		metaDataStr.WriteString(" s:")
+		metaDataStr.WriteString(data[0])
+		metaDataStr.WriteString("=\"")
+		metaDataStr.WriteString(strings.Replace(data[1], "\"", "\\\"", -1))
+		metaDataStr.WriteString("\"")
+	}
+
+	fmt.Printf("PUTNOTIF message=\"%s\" severity=%s time=%f "+
+		"host=localhost plugin=%s type=%s %s\n",
+		message, severity, unixNow, cn.pluginName, cn.typeName, metaDataStr.String())
+
+	return nil
+}
 
 func transmit(config *Config, edlist []evalData) {
 	annoConfig := config.Common
@@ -36,9 +60,9 @@ func transmit(config *Config, edlist []evalData) {
 	})
 	pool := annotate.RedisPool{Client: client}
 
-	notifier := notify.CollectdNotifier{
-		PluginName: config.Threshold.CollectdPlugin,
-		TypeName:   config.Threshold.CollectdType}
+	notifier := collectdNotifier{
+		pluginName: config.Threshold.CollectdPlugin,
+		typeName:   config.Threshold.CollectdType}
 
 	for _, ed := range edlist {
 		if ed.label == 1 {
@@ -64,7 +88,7 @@ func transmit(config *Config, edlist []evalData) {
 			fmt.Println(nameInfo)
 			fmt.Println(ifInfo)
 
-			notifier.Send(message.String(),
+			send(notifier, message.String(),
 				"warning",
 				[][2]string{{"vminfo", nameInfo}, {"neutron_network", ifInfo}})
 
