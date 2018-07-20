@@ -19,7 +19,7 @@ package main
 import (
 	"bytes"
 	"fmt"
-	"github.com/distributed-monitoring/agent/pkg/annotate"
+	"github.com/distributed-monitoring/agent/pkg/common"
 	"github.com/go-redis/redis"
 	"strconv"
 	"strings"
@@ -58,7 +58,7 @@ func transmit(config *Config, edlist []evalData) {
 		Password: annoConfig.RedisPassword,
 		DB:       annoConfig.RedisDB,
 	})
-	pool := annotate.RedisPool{Client: client}
+	pool := common.RedisPool{Client: client}
 
 	notifier := collectdNotifier{
 		pluginName: config.Threshold.CollectdPlugin,
