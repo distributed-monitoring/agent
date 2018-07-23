@@ -2,5 +2,5 @@
 
 CONFFILE=$1
 
-curl -v 'http://192.0.2.15:12345/collectd/conf' -F "file=@${CONFFILE}"
+curl -v 'http://overcloud-novacompute-0.internalapi:12345/collectd/conf' -F "file=@${CONFFILE}"
 
