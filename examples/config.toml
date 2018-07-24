@@ -7,9 +7,9 @@ redis_db = 0
 
 
 [server]
-amqp_host = "192.0.2.3"
+amqp_host = "overcloud-controller-0.internalapi"
 amqp_user = "guest"
-amqp_password = "xxxx"
+amqp_password = "xxxxxxxxxxxxxxxxxxxxxxxxx"
 amqp_port = "5672"
 
 collectd_confdir = "/etc/collectd/collectd.conf.d"
@@ -18,10 +18,10 @@ collectd_confdir = "/etc/collectd/collectd.conf.d"
 [infofetch]
 os_username = "admin"
 os_user_domain_name = "Default"
-os_project_domain_name = ""
+os_project_domain_name = "Default"
 os_project_name = "admin"
-os_password = "xxxx"
-os_auth_url = "http://192.0.2.3:5000/v3"
+os_password = "xxxxxxxxxxxxxxxxxxxxxxxxx"
+os_auth_url = "http://overcloud-controller-0.internalapi:5000/v3"
 
 
 [threshold]

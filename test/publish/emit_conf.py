@@ -12,9 +12,11 @@ if (argc != 2):
 
 conffilename = argvs[1]
 
+amqphost = os.environ.get('AMQP_HOST', 'overcloud-controller-0.internalapi')
+
 credentials=pika.PlainCredentials('guest', os.environ['AMQP_PASSWORD'])
 connection = pika.BlockingConnection(pika.ConnectionParameters(
-        host=os.environ['AMQP_HOST'], credentials=credentials))
+        host=amqphost, credentials=credentials))
 channel = connection.channel()
 
 channel.exchange_declare(exchange='collectd-conf',
