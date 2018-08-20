@@ -5,9 +5,6 @@ install:
   - sudo apt-get install libvirt-dev
   - go get -u github.com/laher/goxc
   - go get github.com/golang/lint/golint
-  - go get ./cmd/server
-  - go get ./cmd/threshold
-  - go get ./cmd/infofetch
 
 before_script:
   - go vet ./cmd/server
