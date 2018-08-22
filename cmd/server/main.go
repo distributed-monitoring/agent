@@ -34,6 +34,8 @@ type Config struct {
 
 // ServerConfig is ...
 type ServerConfig struct {
+	ListenPort string `toml:"listen_port"`
+
 	AmqpHost     string `toml:"amqp_host"`
 	AmqpUser     string `toml:"amqp_user"`
 	AmqpPassword string `toml:"amqp_password"`

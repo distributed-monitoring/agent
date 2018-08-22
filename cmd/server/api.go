@@ -67,7 +67,8 @@ func runAPIServer(ctx context.Context, config *Config) {
 
 	// Start server
 	go func() {
-		if err := e.Start(":12345"); err != nil {
+		urlStr := ":" + config.Server.ListenPort
+		if err := e.Start(urlStr); err != nil {
 			e.Logger.Info("shutting down the server")
 		}
 	}()
