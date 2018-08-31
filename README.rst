@@ -34,8 +34,19 @@ Getting Started
     # vi /etc/barometer-localagent/config.toml
     (edit amqp_password and os_password:OpenStack admin password)
 
+    (When there is no key for SSH access authentication)
+    # ssh-keygen
+    (Press Enter until done)
+
+    (Backup if necessary)
+    # cp ~/.ssh/authorized_keys ~/.ssh/authorized_keys_org
+
+    # cat ~/.ssh/authorized_keys_org ~/.ssh/id_rsa.pub \
+      > ~/.ssh/authorized_keys
+
     # docker run -tid --net=host --name server \
       -v /etc/barometer-localagent:/etc/barometer-localagent \
+      -v /root/.ssh/id_rsa:/root/.ssh/id_rsa \
       -v /etc/collectd/collectd.conf.d:/etc/collectd/collectd.conf.d \
       opnfv/barometer-localagent /server
 
