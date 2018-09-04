@@ -65,7 +65,7 @@ type evalData struct {
 
 func main() {
 	var config Config
-	_, err := toml.DecodeFile("/etc/barometer-localagent/config.toml", &config)
+	_, err := toml.DecodeFile("/etc/barometer-dma/config.toml", &config)
 	if err != nil {
 		log.Fatalf("Read error of config: %s", err)
 	}

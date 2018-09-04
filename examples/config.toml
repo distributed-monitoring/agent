@@ -37,6 +37,6 @@ redis_db = 0
 interval = 5
 min = 1000000
 
-collectd_plugin = "barometer-localagent"
+collectd_plugin = "barometer-dma"
 collectd_type = "if-octets-threshold"
 
