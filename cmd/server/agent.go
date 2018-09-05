@@ -7,7 +7,7 @@ import (
 )
 
 func createCollectdConf() error {
-	outStatus, errStatus := exec.Command("sudo", "systemctl", "status", "collectd").Output()
+	outStatus, errStatus := exec.Command("ssh", "-o", "StrictHostKeyChecking=no", "-o", "UserKnownHostsFile=/dev/null", "localhost", "sudo", "systemctl", "status", "collectd").Output()
 	if errStatus != nil {
 		return fmt.Errorf("status NG")
 	}
@@ -15,12 +15,12 @@ func createCollectdConf() error {
 		return fmt.Errorf("status not running")
 	}
 
-	_, errStop := exec.Command("sudo", "systemctl", "stop", "collectd").Output()
+	_, errStop := exec.Command("ssh", "-o", "StrictHostKeyChecking=no", "-o", "UserKnownHostsFile=/dev/null", "localhost", "sudo", "systemctl", "stop", "collectd").Output()
 	if errStop != nil {
 		return fmt.Errorf("stop NG")
 	}
 
-	_, errStart := exec.Command("sudo", "systemctl", "start", "collectd").Output()
+	_, errStart := exec.Command("ssh", "-o", "StrictHostKeyChecking=no", "-o", "UserKnownHostsFile=/dev/null", "localhost", "sudo", "systemctl", "start", "collectd").Output()
 	if errStart != nil {
 		return fmt.Errorf("start NG")
 	}

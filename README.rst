@@ -19,72 +19,51 @@ and notification policies.
 
 Getting Started
 =================
+.. code:: bash
 
-Installation
---------------
-Operate by the user who starts collectd. (``root`` for CentOS ) ::
+    # docker run -tid -p 6379:6379 --name barometer-redis redis
 
-    # go get github.com/distributed-monitoring/agent/cmd/server
+    # cd <Directory that Dockerfile is located>
+    # docker build -t opnfv/barometer-localagent --build-arg http_proxy=`echo $http_proxy` \
+      --build-arg https_proxy=`echo $https_proxy` -f Dockerfile .
+    # docker images
 
-AMQP setting is hard-coded with apex's openstack RabbitMQ setting.
-(This is WIP. We will make it configurable later.)
+    # cd <Directory that examples of config.toml is located>
+    # mkdir /etc/barometer-localagent
+    # cp examples/config.toml /etc/barometer-localagent/
+    # vi /etc/barometer-localagent/config.toml
+    (edit amqp_password and os_password:OpenStack admin password)
 
-* username: guest
-* password: (given by environment variable ``AMQP_PASSWORD``)
-* IP: 192.0.2.11
-* port: 5672
+    (When there is no key for SSH access authentication)
+    # ssh-keygen
+    (Press Enter until done)
 
-If you want to change these, set the URI of amqp.::
+    (Backup if necessary)
+    # cp ~/.ssh/authorized_keys ~/.ssh/authorized_keys_org
 
-    # cd $GOPATH/src/github.com/distributed-monitoring/agent/cmd/server
-    # vi amqp.go
-    (Edit variables 'amqpPass' and 'amqpURL')
-    # go install
-    
-Execute server.::
+    # cat ~/.ssh/authorized_keys_org ~/.ssh/id_rsa.pub \
+      > ~/.ssh/authorized_keys
 
-    # server -type <Server Type>
+    # docker run -tid --net=host --name server \
+      -v /etc/barometer-localagent:/etc/barometer-localagent \
+      -v /root/.ssh/id_rsa:/root/.ssh/id_rsa \
+      -v /etc/collectd/collectd.conf.d:/etc/collectd/collectd.conf.d \
+      opnfv/barometer-localagent /server
 
-Configure
------------
+    # docker run -tid --net=host --name infofetch \
+      -v /etc/barometer-localagent:/etc/barometer-localagent \
+      -v /var/run/libvirt:/var/run/libvirt \
+      opnfv/barometer-localagent /infofetch
 
-(T.B.D.)
-
-Verification
---------------
-
-API server (``server -type api``)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-::
-
-    # echo "## test config ##" > /tmp/mytest.conf
-    # curl -v http://localhost:12345/collectd/conf -F "file=@/tmp/mytest.conf"
-    # systemctl status collectd
-    (check the status of collectd is active)
-    # cat /etc/collectd/collectd.conf.d/mytest.conf
-    ## test config ##
-
-PusSub Subscriber server (``server -type pubsub``)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-::
-
-    # echo "## test config ##" > /tmp/mytest.conf
-    # cd $GOPATH/src/github.com/distributed-monitoring/agent/test/publish
-    # vi emit_conf.py
-    (Edit variables 'credentials' and 'connection')
-    # ./emit_conf.py /tmp/mytest.conf
-    # systemctl status collectd
-    (check the status of collectd is active)
-    # cat /etc/collectd/collectd.conf.d/mytest.conf
-    ## test config ##
-
+    # docker cp infofetch:/threshold ./
+    # ln -s ${PWD}/threshold /usr/local/bin/
 
 
 Features
 ==========
 
 * Dynamic setting of collectd
-* ...
+* Annotate...
 
 
 
