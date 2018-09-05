@@ -55,7 +55,7 @@ type InfoFetchConfig struct {
 func main() {
 
 	var config Config
-	_, err := toml.DecodeFile("/etc/barometer-localagent/config.toml", &config)
+	_, err := toml.DecodeFile("/etc/barometer-dma/config.toml", &config)
 	if err != nil {
 		log.Println("Read error of config file")
 	}
