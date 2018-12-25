@@ -1,0 +1,33 @@
+@startuml abst
+
+[Controller/Orchestrator] as orc
+
+() "bus(config/events)" as bus_config
+() "bus(telemetry/events)" as bus_data
+
+node Compute{
+    package Hypervisor{
+        [VM] as vm
+        [libvirt, etc] as libvirt
+    }
+    package collectd+DMA{
+        [collectd] as collectd
+        [DMA modules] as dma
+    }
+    database redis{
+        [data] as data
+    }
+
+}
+
+bus_config -u-> dma : recieve some event
+data -u-> dma : poll and evaluate data
+libvirt -u-> dma : receive abnormal event
+
+dma -u-> collectd : change config
+dma -u-> bus_data : notify abnormal value/event
+dma -u-> orc : notify abnormal event (REST)
+
+
+@enduml
+

@@ -1,0 +1,12 @@
+@startuml collect
+
+!include component.pu
+
+libvirt --u-> collectd
+collectd --d-> raw_data
+
+nova -d-> dma_fetch
+dma_fetch --d-> topology
+
+@enduml
+

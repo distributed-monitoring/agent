@@ -1,0 +1,17 @@
+@startuml collect
+
+!include component.pu
+
+orc -d-> conf_bus
+conf_bus -d-> dma_listener
+
+dma_listener -> dma_policy : set policy
+
+dma_listener -> dma_action
+dma_action -> collectd : change config
+
+collectd ..d. raw_data
+collectd ..d. libvirt
+
+@enduml
+

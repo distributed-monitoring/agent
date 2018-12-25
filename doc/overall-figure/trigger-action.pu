@@ -1,0 +1,30 @@
+@startuml trigger-action
+
+!include component.pu
+
+[(other node)] as other
+note top : Service layer monitor / Network equip monitor / ...
+
+other -d-> conf_bus
+conf_bus -d-> dma_listener : recieve event
+dma_listener -> dma_evaluator
+
+raw_data --u-> dma_evaluator : poll data
+
+libvirt --u-> dma_evaluator : recieve event
+
+dma_evaluator -> dma_action
+dma_evaluator -d-> dma_policy  : check policy
+
+dma_action -> collectd : change config
+dma_action -> dma_notifier
+dma_notifier -u-> tele_bus
+tele_bus -u-> ceilo : send metrics data
+dma_notifier -u-> event_bus
+event_bus -u-> orc : notify recovery completion
+
+ceilo -l-> aodh
+aodh -l-> orc
+
+@enduml
+

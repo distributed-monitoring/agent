@@ -1,0 +1,40 @@
+@startuml component
+
+[Orchestrator] as orc
+
+node Controller{
+    [Nova, etc] as nova
+    package Monitor{
+        [Ceilometer /\n Monitor-metrics] as ceilo
+        [Aodh /\n Monitor-alarm] as aodh
+    }
+}
+
+() "bus(Config)" as conf_bus
+() "bus(Telemetry)" as tele_bus
+() "bus(Event)" as event_bus
+
+node Compute{
+    package Hypervisor{
+        [VM] as vm
+        [libvirt, etc] as libvirt
+    }
+    [collectd] as collectd
+    package DMA{
+        [Infofetch] as dma_fetch
+        [Listner] as dma_listener
+        [Policy Engine] as dma_policy
+        database policy
+        dma_policy . policy
+        [Evaluator] as dma_evaluator
+        [Action] as dma_action
+        [Notifier] as dma_notifier
+    }
+    database redis{
+        [topology]
+        [raw_data] 
+    }
+}
+
+@enduml
+
